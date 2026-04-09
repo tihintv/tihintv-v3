@@ -62,7 +62,7 @@ export default async function WatchPage({
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
           <div className="aspect-video w-full">
             <iframe
-              src={movie.video_url}
+              src={movie.video_url || ""}
               allow="autoplay; fullscreen"
               className="h-full w-full"
               allowFullScreen
