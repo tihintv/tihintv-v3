@@ -6,6 +6,23 @@ import { getMoviesWithEpisodeMeta } from "@/lib/getMoviesWithEpisodeMeta";
 import { getEpisodes } from "@/lib/getEpisodes";
 import { getRelatedMovies } from "@/lib/getRelatedMovies";
 
+// 🔥 Bổ sung Type khai báo rõ ràng các trường dữ liệu để Vercel không bắt bẻ
+type MovieDetail = {
+  slug: string;
+  title: string;
+  description: string;
+  year: number;
+  genres: string[];
+  poster: string;
+  banner?: string;
+  video_url?: string | null;
+  featured?: boolean;
+  content_type: string;
+  total_episodes?: number | null; // Đây chính là "chìa khóa" fix lỗi
+  episode_count?: number;
+  [key: string]: any; // Dự phòng an toàn cho các trường ẩn khác
+};
+
 export default async function MovieDetailPage({
   params,
 }: {
@@ -15,10 +32,11 @@ export default async function MovieDetailPage({
 
   const movies = await getMoviesWithEpisodeMeta();
 
+  // 🔥 Ép kiểu (cast) về MovieDetail để TypeScript nhận diện được total_episodes
   const movie =
-    movies.find(
+    (movies.find(
       (item: any) => item.slug.toLowerCase() === slug.toLowerCase()
-    ) ?? null;
+    ) as MovieDetail) ?? null;
 
   if (!movie) return notFound();
 
