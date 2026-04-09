@@ -1,36 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json().catch(() => ({}));
-    const target = body?.target ?? "all";
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const target = searchParams.get("target") || "all";
 
-    if (target === "movies" || target === "all") {
-      revalidateTag("movies");
-    }
-
-    if (target === "episodes" || target === "all") {
-      revalidateTag("latest-episodes");
-    }
-
-    revalidatePath("/");
-    revalidatePath("/movies");
-
-    return NextResponse.json({
-      ok: true,
-      target,
-      revalidatedAt: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error("revalidate api error:", error);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        message: "Revalidate thất bại",
-      },
-      { status: 500 }
-    );
+  if (target === "movies" || target === "all") {
+    revalidateTag("movies");
   }
+
+  if (target === "episodes" || target === "all") {
+    revalidateTag("episodes");
+  }
+
+  return NextResponse.json({ 
+    revalidated: true, 
+    target: target,
+    now: Date.now() 
+  });
 }
