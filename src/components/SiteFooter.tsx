@@ -1,10 +1,10 @@
-export default function SiteFooter() {
+import { siteConfig } from "@/lib/site";
+
+export default function Footer() {
   return (
-    <footer className="mt-16 border-t border-white/10 bg-black/30">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-white/60 md:px-6">
-        <h3 className="text-lg font-bold text-white">TihinTV</h3>
-        <p>Kho phim online của riêng bạn.</p>
-        <p className="text-white/40">© 2026 TihinTV. All rights reserved.</p>
+    <footer className="border-t border-white/10 bg-black">
+      <div className="mx-auto max-w-7xl px-4 py-6 text-sm text-zinc-400">
+        © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
       </div>
     </footer>
   );

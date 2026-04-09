@@ -1,7 +1,16 @@
 import Link from "next/link";
 import type { Movie } from "@/data/movies";
 
-export default function HeroBanner({ movie }: { movie: Movie }) {
+export default function HeroBanner({
+  movie,
+}: {
+  movie: Movie & { content_type?: string };
+}) {
+  const playHref =
+    movie.content_type === "series"
+      ? `/movie/${movie.slug}`
+      : `/watch/${movie.slug}`;
+
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-900">
       <div
@@ -18,9 +27,7 @@ export default function HeroBanner({ movie }: { movie: Movie }) {
               Phim nổi bật
             </span>
 
-            <h1 className="text-3xl font-bold md:text-5xl">
-              {movie.title}
-            </h1>
+            <h1 className="text-3xl font-bold md:text-5xl">{movie.title}</h1>
 
             <p className="line-clamp-3 text-sm text-white/80 md:text-base">
               {movie.description}
@@ -39,7 +46,7 @@ export default function HeroBanner({ movie }: { movie: Movie }) {
 
             <div className="flex gap-3 pt-2">
               <Link
-                href={`/watch/${movie.slug}`}
+                href={playHref}
                 className="rounded-xl bg-red-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-400"
               >
                 ▶ Xem ngay
