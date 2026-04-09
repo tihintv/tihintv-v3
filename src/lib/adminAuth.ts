@@ -1,4 +1,5 @@
-// File: src/lib/adminAuth.ts
+"use server";
+
 import { cookies } from "next/headers";
 
 const AUTH_COOKIE_NAME = "tihintv_admin_auth";
