@@ -1,3 +1,4 @@
+// File: src/app/admin/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -11,6 +12,7 @@ import { deleteMovieFromSupabase } from "@/lib/deleteMovieFromSupabase";
 import { addEpisodeToSupabase } from "@/lib/addEpisodeToSupabase";
 import { updateEpisodeInSupabase } from "@/lib/updateEpisodeInSupabase";
 import { deleteEpisodeFromSupabase } from "@/lib/deleteEpisodeFromSupabase";
+import { loginAdmin, logoutAdmin, isAdminAuthenticated } from "@/lib/adminAuth";
 
 type Movie = {
   id?: string | number;
@@ -71,6 +73,13 @@ function formatMovieType(contentType: "movie" | "series") {
 }
 
 export default function AdminPage() {
+  // --- AUTHENTICATION STATE ---
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // --- ADMIN STATE ---
   const [movies, setMovies] = useState<Movie[]>([]);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [selectedMovieSlug, setSelectedMovieSlug] = useState("");
@@ -95,6 +104,45 @@ export default function AdminPage() {
   const [confirmMovieSlug, setConfirmMovieSlug] = useState<string | null>(null);
   const [confirmEpisodeId, setConfirmEpisodeId] = useState<string | number | null>(null);
 
+  // --- CHECK AUTHENTICATION ---
+  useEffect(() => {
+    async function checkAuth() {
+      const isAuth = await isAdminAuthenticated();
+      setIsAuthenticated(isAuth);
+      if (isAuth) {
+        loadMovies();
+      }
+    }
+    checkAuth();
+  }, []);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginError("");
+    setIsLoggingIn(true);
+    
+    try {
+      const success = await loginAdmin(password);
+      if (success) {
+        setIsAuthenticated(true);
+        loadMovies();
+      } else {
+        setLoginError("Mật khẩu không chính xác!");
+      }
+    } catch (error) {
+      setLoginError("Có lỗi xảy ra, vui lòng thử lại.");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
+
+  async function handleLogout() {
+    await logoutAdmin();
+    setIsAuthenticated(false);
+    setPassword("");
+  }
+
+  // --- ADMIN FUNCTIONS ---
   async function loadMovies() {
     try {
       setLoadingMovies(true);
@@ -145,18 +193,14 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    loadMovies();
-  }, []);
-
-  useEffect(() => {
-    if (selectedMovieSlug) {
+    if (selectedMovieSlug && isAuthenticated) {
       loadEpisodes(selectedMovieSlug);
       setEpisodeForm((prev) => ({
         ...prev,
         movie_slug: selectedMovieSlug,
       }));
     }
-  }, [selectedMovieSlug]);
+  }, [selectedMovieSlug, isAuthenticated]);
 
   const filteredMovies = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -234,7 +278,6 @@ export default function AdminPage() {
     try {
       setSubmittingMovie(true);
 
-      // ✅ CHỈ LẤY ĐÚNG CÁC CỘT TRONG DATABASE, KHÔNG LẤY CÁC TRƯỜNG ẢO
       const payload = {
         slug: movieForm.slug.trim().toLowerCase(),
         title: movieForm.title.trim(),
@@ -287,9 +330,7 @@ export default function AdminPage() {
       };
 
       if (editingEpisodeId) {
-        // XÓA record cũ
         await deleteEpisodeFromSupabase(editingEpisodeId);
-        // THÊM record mới
         await addEpisodeToSupabase(payload);
       } else {
         await addEpisodeToSupabase(payload);
@@ -369,6 +410,56 @@ export default function AdminPage() {
     }
   }
 
+  // --- RENDER MÀN HÌNH CHỜ HOẶC ĐĂNG NHẬP ---
+  if (isAuthenticated === null) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-neutral-950">
+        <p className="text-white/60">Đang kiểm tra bảo mật...</p>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-neutral-950 p-4">
+        <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-bold text-white">Quản trị TiHinTV</h1>
+            <p className="mt-2 text-sm text-white/50">
+              Vui lòng nhập mật khẩu để truy cập
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <input
+                type="password"
+                placeholder="Nhập mật khẩu..."
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-12 w-full rounded-2xl border border-white/10 bg-black/30 px-4 text-center text-white outline-none transition placeholder:text-white/25 focus:border-red-500"
+                required
+              />
+            </div>
+
+            {loginError && (
+              <p className="text-center text-sm text-red-400">{loginError}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-red-500 px-5 text-sm font-semibold text-white transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoggingIn ? "Đang mở cửa..." : "Đăng nhập"}
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
+  // --- RENDER MÀN HÌNH ADMIN CHÍNH (Sau khi đăng nhập) ---
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
       <SiteHeader />
@@ -377,9 +468,18 @@ export default function AdminPage() {
         <section className="mb-8 rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="mb-2 inline-flex rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-red-300">
-                Dashboard
-              </p>
+              <div className="mb-2 flex items-center gap-3">
+                <p className="inline-flex rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-red-300">
+                  Dashboard
+                </p>
+                {/* Nút Đăng xuất ở đây */}
+                <button 
+                  onClick={handleLogout}
+                  className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
+                >
+                  Đăng xuất
+                </button>
+              </div>
 
               <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
                 Admin quản trị TiHinTV
@@ -411,6 +511,7 @@ export default function AdminPage() {
         </section>
 
         <div className="grid gap-8 xl:grid-cols-[1.3fr_0.95fr]">
+          {/* Form thêm phim */}
           <section className="space-y-8">
             <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.22)] md:p-6">
               <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -634,6 +735,7 @@ export default function AdminPage() {
               </form>
             </div>
 
+            {/* Form thêm tập */}
             <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.22)] md:p-6">
               <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -753,6 +855,7 @@ export default function AdminPage() {
             </div>
           </section>
 
+          {/* Danh sách phim và tập */}
           <section className="space-y-8">
             <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.22)] md:p-6">
               <div className="mb-5 flex flex-col gap-4">

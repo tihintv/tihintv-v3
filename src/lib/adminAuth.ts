@@ -1,27 +1,37 @@
-const ADMIN_KEY = "tihintv_admin_logged_in";
-const ADMIN_PASSWORD = "peacehkb295libra";
+// File: src/lib/adminAuth.ts
+import { cookies } from "next/headers";
 
-export function getAdminPassword() {
-  return ADMIN_PASSWORD;
+const AUTH_COOKIE_NAME = "tihintv_admin_auth";
+// Mã hóa nhẹ mật khẩu để lưu vào cookie cho an toàn hơn chút
+const SECRET_TOKEN = "admin_logged_in_token_xyz"; 
+
+// Hàm kiểm tra xem đã đăng nhập chưa
+export async function isAdminAuthenticated() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(AUTH_COOKIE_NAME);
+  return token?.value === SECRET_TOKEN;
 }
 
-export function isAdminLoggedIn() {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem(ADMIN_KEY) === "true";
-}
+// Hàm xử lý đăng nhập (gọi từ Client)
+export async function loginAdmin(password: string) {
+  const correctPassword = process.env.ADMIN_PASSWORD;
 
-export function loginAdmin(password: string) {
-  if (typeof window === "undefined") return false;
-
-  if (password === ADMIN_PASSWORD) {
-    localStorage.setItem(ADMIN_KEY, "true");
+  if (password === correctPassword) {
+    const cookieStore = await cookies();
+    // Set cookie sống trong 7 ngày
+    cookieStore.set(AUTH_COOKIE_NAME, SECRET_TOKEN, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, 
+      path: "/",
+    });
     return true;
   }
-
   return false;
 }
 
-export function logoutAdmin() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(ADMIN_KEY);
+// Hàm xử lý đăng xuất
+export async function logoutAdmin() {
+  const cookieStore = await cookies();
+  cookieStore.delete(AUTH_COOKIE_NAME);
 }
