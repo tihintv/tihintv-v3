@@ -6,6 +6,15 @@ import VideoPlayer from "@/components/VideoPlayer";
 import { getEpisodes } from "@/lib/getEpisodes";
 import { getMoviesWithEpisodeMeta } from "@/lib/getMoviesWithEpisodeMeta";
 
+// 🔥 Bổ sung Type khai báo rõ ràng để Vercel không bắt bẻ lỗi total_episodes
+type MovieDetail = {
+  slug: string;
+  title: string;
+  poster: string;
+  total_episodes?: number | null;
+  [key: string]: any;
+};
+
 export default async function WatchEpisodePage({
   params,
 }: {
@@ -14,8 +23,10 @@ export default async function WatchEpisodePage({
   const { slug, episode } = await params;
 
   const movies = await getMoviesWithEpisodeMeta();
+  
+  // 🔥 Ép kiểu (cast) về MovieDetail tại đây
   const movie =
-    movies.find((m: any) => m.slug.toLowerCase() === slug.toLowerCase()) ??
+    (movies.find((m: any) => m.slug.toLowerCase() === slug.toLowerCase()) as MovieDetail) ??
     null;
 
   if (!movie) return notFound();
