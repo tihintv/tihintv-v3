@@ -372,7 +372,7 @@ export default function HomeClient({ movies, latestEpisodes }: Props) {
         ) : (
           <>
             {!isSearching && displayLatestEpisodes.length > 0 ? (
-              <LatestEpisodesSection episodes={displayLatestEpisodes as any} />
+              <LatestEpisodesSection episodes={displayLatestEpisodes as any} movies={movies as any} />
             ) : null}
 
             <SectionGrid
