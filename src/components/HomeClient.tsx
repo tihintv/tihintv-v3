@@ -97,8 +97,14 @@ export default function HomeClient({ movies, latestEpisodes }: Props) {
     }
   }, [latestEpisodes]);
 
-  const featuredMovie =
-    displayMovies.find((movie) => movie.featured) ?? displayMovies[0] ?? null;
+  // SỬA Ở ĐÂY: Lọc lấy tất cả phim nổi bật (tối đa 5 phim), nếu không có thì lấy 5 phim mới nhất
+  const featuredMovies = useMemo(() => {
+    const featured = displayMovies.filter((movie) => movie.featured);
+    if (featured.length > 0) {
+      return featured.slice(0, 5);
+    }
+    return displayMovies.slice(0, 5);
+  }, [displayMovies]);
 
   const allGenres = useMemo(() => {
     const genreSet = new Set<string>();
@@ -228,7 +234,11 @@ export default function HomeClient({ movies, latestEpisodes }: Props) {
   return (
     <div className="min-h-screen bg-neutral-950">
       <div className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-6 md:px-6 md:py-8">
-        {featuredMovie ? <HeroBanner movie={featuredMovie as any} /> : null}
+        
+        {/* SỬA Ở ĐÂY: Truyền mảng phim vào cho HeroBanner */}
+        {featuredMovies.length > 0 ? (
+          <HeroBanner movies={featuredMovies as any} />
+        ) : null}
 
         {!isSearching ? <ContinueWatchingSection /> : null}
 
