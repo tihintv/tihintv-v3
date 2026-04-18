@@ -11,13 +11,13 @@ export default function HeroBanner({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Tự động chuyển slide sau mỗi 5 giây
+  // Tự động chuyển slide sau mỗi 3 giây
   useEffect(() => {
     if (!movies || movies.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % movies.length);
-    }, 5000);
+    }, 3000); // Đã đổi từ 5000 thành 3000 ở đây
 
     return () => clearInterval(interval);
   }, [movies]);
@@ -33,7 +33,6 @@ export default function HeroBanner({
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-900 group">
       <div className="relative min-h-[420px] md:min-h-[500px]">
-        {/* Render tất cả background nhưng chỉ hiện (opacity-100) cái đang active để có hiệu ứng fade mượt mà */}
         {movies.map((movie, index) => (
           <div
             key={movie.slug}
@@ -91,7 +90,6 @@ export default function HeroBanner({
           </div>
         </div>
 
-        {/* Cụm dấu chấm (Dots) hiển thị ở đáy */}
         {movies.length > 1 && (
           <div className="absolute bottom-4 left-0 right-0 z-30 flex justify-center gap-2">
             {movies.map((_, index) => (
