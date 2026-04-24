@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { siteConfig } from "@/lib/site";
 
@@ -32,7 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className="bg-black text-white">{children}</body>
+      <body className="bg-black text-white">
+        {children}
+        <Analytics /> {/* <-- NÓ PHẢI NẰM Ở ĐÂY ĐỂ HOẠT ĐỘNG */}
+      </body>
     </html>
   );
 }
