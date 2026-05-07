@@ -316,6 +316,7 @@ export default function AdminPage() {
     }
   }
 
+  // --- ĐÃ ĐƯỢC NÂNG CẤP ---
   async function handleSubmitEpisode(e: React.FormEvent) {
     e.preventDefault();
 
@@ -330,11 +331,20 @@ export default function AdminPage() {
       };
 
       if (editingEpisodeId) {
-        await deleteEpisodeFromSupabase(editingEpisodeId);
-        await addEpisodeToSupabase(payload);
+        await updateEpisodeInSupabase(editingEpisodeId, payload); // Đã sửa lại thành update thay vì delete & add
       } else {
         await addEpisodeToSupabase(payload);
       }
+
+      // --- PHẦN QUAN TRỌNG: CẬP NHẬT UPDATED_AT CHO PHIM ---
+      const targetMovie = movies.find(m => m.slug === payload.movie_slug);
+      if (targetMovie && targetMovie.slug) {
+        await updateMovieInSupabase(targetMovie.slug, {
+          ...targetMovie,
+          updated_at: new Date().toISOString()
+        });
+      }
+      // -----------------------------------------------------
 
       await loadEpisodes(payload.movie_slug);
       await loadMovies();
