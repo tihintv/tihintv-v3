@@ -127,15 +127,6 @@ export default function HomeClient({ movies, latestEpisodes }: Props) {
     return Array.from(yearSet).sort((a, b) => b - a);
   }, [displayMovies]);
 
-  // HÀM LẤY THỜI GIAN CẬP NHẬT THỰC TẾ (BAO GỒM CẢ PHIM VÀ TẬP MỚI)
-  const getActualUpdateTime = (movie: Movie) => {
-    const latestEp = displayLatestEpisodes.find((ep) => ep.movie_slug === movie.slug);
-    const movieUpdate = movie.updated_at || "";
-    const epUpdate = latestEp?.created_at || "";
-    // Trả về thời gian nào mới hơn
-    return epUpdate > movieUpdate ? epUpdate : movieUpdate;
-  };
-
   const filteredMovies = useMemo(() => {
     const normalizedKeyword = normalizeVietnamese(debouncedQuery);
 
@@ -191,8 +182,7 @@ export default function HomeClient({ movies, latestEpisodes }: Props) {
           return (a.year || 0) - (b.year || 0);
         case "updated":
         default:
-          // So sánh thời gian cập nhật thực tế
-          return getActualUpdateTime(a) < getActualUpdateTime(b) ? 1 : -1;
+          return (a.updated_at || "") < (b.updated_at || "") ? 1 : -1;
       }
     });
 
@@ -204,15 +194,13 @@ export default function HomeClient({ movies, latestEpisodes }: Props) {
     genreFilter,
     yearFilter,
     sortFilter,
-    displayLatestEpisodes // Quan trọng: Thêm dependency này để update khi có tập mới
   ]);
 
-  // CẬP NHẬT LẠI LÔ-GIC SẮP XẾP CHO SECTION "MỚI CẬP NHẬT"
   const latestMovies = useMemo(() => {
     return [...filteredMovies].sort((a, b) =>
-      getActualUpdateTime(a) < getActualUpdateTime(b) ? 1 : -1
+      (a.updated_at || "") < (b.updated_at || "") ? 1 : -1
     );
-  }, [filteredMovies, displayLatestEpisodes]);
+  }, [filteredMovies]);
 
   const seriesMovies = filteredMovies.filter(
     (movie) => movie.content_type === "series"
