@@ -330,11 +330,14 @@ export default function AdminPage() {
         video_url: episodeForm.video_url.trim(),
       };
 
+      // --- ĐÃ TRẢ LẠI CÁCH CŨ CỦA EM ĐỂ KHÔNG BỊ LỖI ---
       if (editingEpisodeId) {
-        await updateEpisodeInSupabase(editingEpisodeId, payload); // Đã sửa lại thành update thay vì delete & add
+        await deleteEpisodeFromSupabase(editingEpisodeId);
+        await addEpisodeToSupabase(payload);
       } else {
         await addEpisodeToSupabase(payload);
       }
+      // -------------------------------------------------
 
       // --- PHẦN QUAN TRỌNG: CẬP NHẬT UPDATED_AT CHO PHIM ---
       const targetMovie = movies.find(m => m.slug === payload.movie_slug);
