@@ -337,21 +337,37 @@ export default function AdminPage() {
         await addEpisodeToSupabase(payload);
       }
 
-      // --- FIX LỖI TYPESCRIPT BẰNG LÁ BÙA "as any" ---
+      // --- CÁCH CHUẨN ĐỂ "ĐÁNH THỨC" PHIM (SUPABASE KHÔNG BÁO LỖI) ---
       const targetMovie = movies.find(m => m.slug === payload.movie_slug);
-      if (targetMovie && targetMovie.slug) {
-        await updateMovieInSupabase(targetMovie.slug, {
-          ...targetMovie,
-          updated_at: new Date().toISOString()
-        } as any); // <-- Lá bùa ở đây để Vercel không bắt lỗi nữa
+      if (targetMovie) {
+        // Chỉ bế đúng những thông tin hợp lệ mà Supabase cấp phép để lưu lại
+        const safeMoviePayload = {
+          slug: targetMovie.slug,
+          title: targetMovie.title,
+          description: targetMovie.description,
+          year: targetMovie.year,
+          genres: targetMovie.genres,
+          poster: targetMovie.poster,
+          banner: targetMovie.banner,
+          video_url: targetMovie.video_url,
+          featured: targetMovie.featured,
+          content_type: targetMovie.content_type,
+          total_episodes: targetMovie.total_episodes,
+        };
+        await updateMovieInSupabase(targetMovie.slug, safeMoviePayload);
       }
-      // -----------------------------------------------
+      // -------------------------------------------------------------
 
       await loadEpisodes(payload.movie_slug);
       await loadMovies();
       resetEpisodeForm();
-    } catch (error) {
+      
+      // Báo thành công cho Giám đốc biết
+      alert(editingEpisodeId ? "Cập nhật tập phim thành công!" : "Thêm tập mới thành công! Phim đã được đẩy lên Top!");
+
+    } catch (error: any) {
       console.error("Lỗi submit episode:", error);
+      alert("Chết dở, có lỗi rồi: " + error.message);
     } finally {
       setSubmittingEpisode(false);
     }
