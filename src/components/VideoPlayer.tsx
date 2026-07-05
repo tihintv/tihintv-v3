@@ -56,17 +56,18 @@ export default function VideoPlayer({
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
   return (
-    // Đổi thành h-full để giãn căng trọn vẹn theo chiếc lồng 16:9 ở file page.tsx
-    <div className="relative w-full h-full">
-      {/* Thêm absolute để ép iframe bám dính 100% vào các mép khung */}
+    <div className="relative w-full aspect-video bg-black overflow-hidden">
+      {/* 🔥 ĐÂY LÀ PHÉP THUẬT:
+        - Trên Mobile: Ép to 200% (w-[200%] h-[200%]) rồi thu nhỏ lại (scale-50) để hiện full nút.
+        - Trên Máy tính/Tablet (md:): Trả lại 100% kích thước gốc vì màn đã đủ to.
+      */}
       <iframe
         src={videoUrl}
-        className="absolute top-0 left-0 w-full h-full"
+        className="absolute top-0 left-0 w-[200%] h-[200%] origin-top-left scale-50 md:w-full md:h-full md:scale-100 border-0 outline-none"
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
       />
 
-      {/* Thêm z-10 để màn hình Auto Next luôn hiện đè lên trên cùng của video */}
       {showAutoNext && (
         <div className="absolute inset-0 z-10 bg-black/80 flex items-center justify-center backdrop-blur-sm">
           <div className="bg-zinc-900 border border-white/10 shadow-2xl p-6 rounded-2xl text-center">
