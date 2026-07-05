@@ -59,16 +59,16 @@ export default async function WatchPage({
           {movie.title}
         </h1>
 
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
-          <div className="aspect-video w-full">
-            <iframe
-              src={movie.video_url || ""}
-              allow="autoplay; fullscreen"
-              className="h-full w-full"
-              allowFullScreen
-            />
-          </div>
+        {/* --- CHIẾC LỒNG 16:9 ÉP VIDEO CHUẨN MOBILE TRÊN MỌI MÀN HÌNH --- */}
+        <div className="relative w-full aspect-video overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+          <iframe
+            src={movie.video_url || ""}
+            allow="autoplay; fullscreen; picture-in-picture"
+            className="absolute top-0 left-0 h-full w-full"
+            allowFullScreen
+          />
         </div>
+        {/* ------------------------------------------------------------- */}
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
           <h2 className="text-lg font-semibold text-white">Mô tả</h2>
