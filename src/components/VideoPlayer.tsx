@@ -29,7 +29,6 @@ export default function VideoPlayer({
     const interval = setInterval(() => {
       const elapsed = (Date.now() - startTime) / 1000;
 
-      // Giả lập video ~20 phút
       if (elapsed > 60 * 19) {
         setShowAutoNext(true);
         clearInterval(interval);
@@ -56,38 +55,35 @@ export default function VideoPlayer({
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
   return (
-    <div className="relative w-full aspect-video bg-black overflow-hidden">
-      {/* 🔥 ĐÂY LÀ PHÉP THUẬT:
-        - Trên Mobile: Ép to 200% (w-[200%] h-[200%]) rồi thu nhỏ lại (scale-50) để hiện full nút.
-        - Trên Máy tính/Tablet (md:): Trả lại 100% kích thước gốc vì màn đã đủ to.
-      */}
+    // BỎ HACK CSS, TRẢ VỀ CHUẨN NATIVE RESPONSIVE
+    <div className="relative w-full aspect-video bg-black">
       <iframe
         src={videoUrl}
-        className="absolute top-0 left-0 w-[200%] h-[200%] origin-top-left scale-50 md:w-full md:h-full md:scale-100 border-0 outline-none"
+        className="absolute top-0 left-0 w-full h-full border-0 outline-none"
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
       />
 
       {showAutoNext && (
-        <div className="absolute inset-0 z-10 bg-black/80 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-white/10 shadow-2xl p-6 rounded-2xl text-center">
-            <h2 className="text-white text-lg mb-2 font-semibold">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/10 bg-zinc-900 p-6 text-center shadow-2xl">
+            <h2 className="mb-2 text-lg font-semibold text-white">
               Tập tiếp theo sẽ phát sau {countdown}s
             </h2>
 
-            <div className="flex gap-3 justify-center mt-4">
+            <div className="mt-4 flex justify-center gap-3">
               <button
                 onClick={() =>
                   router.push(`/watch/${slug}/${nextEpisodeNumber}`)
                 }
-                className="bg-red-500 hover:bg-red-400 transition px-5 py-2 rounded-xl text-white font-semibold"
+                className="rounded-xl bg-red-500 px-5 py-2 font-semibold text-white transition hover:bg-red-400"
               >
                 ▶ Xem ngay
               </button>
 
               <button
                 onClick={() => setShowAutoNext(false)}
-                className="bg-white/10 hover:bg-white/20 transition px-5 py-2 rounded-xl text-white font-semibold"
+                className="rounded-xl bg-white/10 px-5 py-2 font-semibold text-white transition hover:bg-white/20"
               >
                 Hủy
               </button>
