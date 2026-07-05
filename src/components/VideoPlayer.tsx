@@ -53,21 +53,24 @@ export default function VideoPlayer({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [showAutoNext]);
+  }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
   return (
-    <div className="relative w-full aspect-video">
+    // Đổi thành h-full để giãn căng trọn vẹn theo chiếc lồng 16:9 ở file page.tsx
+    <div className="relative w-full h-full">
+      {/* Thêm absolute để ép iframe bám dính 100% vào các mép khung */}
       <iframe
         src={videoUrl}
-        className="w-full h-full"
-        allow="autoplay; fullscreen"
+        className="absolute top-0 left-0 w-full h-full"
+        allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
       />
 
+      {/* Thêm z-10 để màn hình Auto Next luôn hiện đè lên trên cùng của video */}
       {showAutoNext && (
-        <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-          <div className="bg-zinc-900 p-6 rounded-xl text-center">
-            <h2 className="text-white text-lg mb-2">
+        <div className="absolute inset-0 z-10 bg-black/80 flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-white/10 shadow-2xl p-6 rounded-2xl text-center">
+            <h2 className="text-white text-lg mb-2 font-semibold">
               Tập tiếp theo sẽ phát sau {countdown}s
             </h2>
 
@@ -76,14 +79,14 @@ export default function VideoPlayer({
                 onClick={() =>
                   router.push(`/watch/${slug}/${nextEpisodeNumber}`)
                 }
-                className="bg-red-500 px-4 py-2 rounded text-white"
+                className="bg-red-500 hover:bg-red-400 transition px-5 py-2 rounded-xl text-white font-semibold"
               >
-                Xem ngay
+                ▶ Xem ngay
               </button>
 
               <button
                 onClick={() => setShowAutoNext(false)}
-                className="bg-gray-600 px-4 py-2 rounded text-white"
+                className="bg-white/10 hover:bg-white/20 transition px-5 py-2 rounded-xl text-white font-semibold"
               >
                 Hủy
               </button>
