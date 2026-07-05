@@ -55,7 +55,6 @@ export default function VideoPlayer({
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
   return (
-    // BỎ HACK CSS, TRẢ VỀ CHUẨN NATIVE RESPONSIVE
     <div className="relative w-full aspect-video bg-black">
       <iframe
         src={videoUrl}
