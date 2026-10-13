@@ -54,30 +54,38 @@ export default function VideoPlayer({
     return () => clearInterval(timer);
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
-  // Ép link luôn luôn về định dạng /preview chuẩn của Google để không bao giờ bị lỗi load
-  const formatPreviewUrl = (url: string) => {
+  // Chuẩn hóa link nhúng (tự sửa lỗi link Streamtape và Google Drive)
+  const formatEmbedUrl = (url: string) => {
     if (!url) return "";
-    if (url.includes("/view")) {
-      return url.replace("/view", "/preview");
+
+    // Tự động chuyển Streamtape /v/ thành /e/ để lấy trình phát nhúng chuẩn
+    if (url.includes("streamtape.com/v/")) {
+      return url.replace("streamtape.com/v/", "streamtape.com/e/");
     }
-    if (!url.includes("/preview") && url.includes("drive.google.com")) {
-      // Nếu link chỉ có ID, tự động sửa về dạng preview
+
+    // Tự động chuyển Google Drive về dạng /preview chuẩn
+    if (url.includes("drive.google.com")) {
+      if (url.includes("/view")) {
+        return url.replace("/view", "/preview");
+      }
       const match = url.match(/\/d\/([^/]+)/);
       if (match && match[1]) {
         return `https://drive.google.com/file/d/${match[1]}/preview`;
       }
     }
+
     return url;
   };
 
   return (
     <div className="relative w-full aspect-video bg-black overflow-hidden select-none touch-pan-y">
-      {/* Iframe chuẩn chỉnh, load 100% ăn ngay không bao giờ chết */}
+      {/* Iframe kèm sandbox chặn quyền mở tab mới (loại bỏ allow-popups) */}
       <iframe
-        src={formatPreviewUrl(videoUrl)}
+        src={formatEmbedUrl(videoUrl)}
         className="absolute top-0 left-0 w-full h-full border-0 outline-none"
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
+        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
       />
 
       {showAutoNext && (
