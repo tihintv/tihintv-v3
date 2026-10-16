@@ -80,20 +80,15 @@ export default function VideoPlayer({
   };
 
   return (
-    <div className="relative w-full aspect-video bg-black overflow-hidden rounded-xl shadow-lg select-none touch-pan-y">
-      {/* 
-        Sử dụng wrapper bọc iframe với kỹ thuật CSS Scale + Translate 
-        giúp ẩn bớt các nút thừa của Google Drive và cân đối lại giao diện trên điện thoại 
-      */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-auto">
-        <iframe
-          src={formatPreviewUrl(videoUrl)}
-          className="absolute -top-[12%] -left-[12%] w-[124%] h-[124%] border-0 outline-none"
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          loading="lazy"
-        />
-      </div>
+    <div className="relative w-full overflow-hidden rounded-2xl bg-black shadow-2xl select-none touch-pan-y" style={{ paddingBottom: '56.25%' }}>
+      {/* Khung chứa iframe chuẩn tuyệt đối tỷ lệ 16:9, không bị bóp méo trên di động */}
+      <iframe
+        src={formatPreviewUrl(videoUrl)}
+        className="absolute top-0 left-0 w-full h-full border-0 outline-none"
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+        loading="lazy"
+      />
 
       {showAutoNext && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
