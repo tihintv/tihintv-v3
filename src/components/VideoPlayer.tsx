@@ -54,11 +54,9 @@ export default function VideoPlayer({
     return () => clearInterval(timer);
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
-  // Chuẩn hóa link Google Drive sang dạng /preview để phát mượt mà ổn định nhất
   const formatPreviewUrl = (url: string) => {
     if (!url) return "";
     
-    // Xử lý nếu là link streamtape (nếu có dùng lót dạ)
     if (url.includes("streamtape.com/v/")) {
       return url.replace("streamtape.com/v/", "streamtape.com/e/");
     }
@@ -73,7 +71,6 @@ export default function VideoPlayer({
       }
     }
     
-    // Nếu là link worker cũ thì bóc lại ID Google Drive để về /preview chính chủ
     const matchWorker = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (matchWorker && matchWorker[1]) {
       return `https://drive.google.com/file/d/${matchWorker[1]}/preview`;
@@ -84,14 +81,19 @@ export default function VideoPlayer({
 
   return (
     <div className="relative w-full aspect-video bg-black overflow-hidden rounded-xl shadow-lg select-none touch-pan-y">
-      {/* Iframe Google Drive chuẩn chỉnh: Tự động co giãn 16:9, không lộ viền thừa trên mobile */}
-      <iframe
-        src={formatPreviewUrl(videoUrl)}
-        className="absolute top-0 left-0 w-full h-full border-0 outline-none"
-        allow="autoplay; fullscreen; picture-in-picture"
-        allowFullScreen
-        loading="lazy"
-      />
+      {/* 
+        Sử dụng wrapper bọc iframe với kỹ thuật CSS Scale + Translate 
+        giúp ẩn bớt các nút thừa của Google Drive và cân đối lại giao diện trên điện thoại 
+      */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-auto">
+        <iframe
+          src={formatPreviewUrl(videoUrl)}
+          className="absolute -top-[12%] -left-[12%] w-[124%] h-[124%] border-0 outline-none"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          loading="lazy"
+        />
+      </div>
 
       {showAutoNext && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
