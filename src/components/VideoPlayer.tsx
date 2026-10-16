@@ -10,8 +10,8 @@ interface Props {
   nextEpisodeNumber?: number;
 }
 
-// Thay đường dẫn Cloudflare Worker của em vào đây
-const CLOUDFLARE_WORKER_URL = "https://tihintv-stream.ten-cua-em.workers.dev";
+// Đường dẫn Cloudflare Worker của TiHinTV
+const CLOUDFLARE_WORKER_URL = "https://tihintv-stream.caothaiquocofficial.workers.dev";
 
 export default function VideoPlayer({
   slug,
@@ -66,32 +66,32 @@ export default function VideoPlayer({
     );
   };
 
-  // Tách ID từ link Google Drive và chuyển qua luồng Cloudflare Worker
+  // Tự động tách ID từ link Google Drive và chuyển qua luồng Cloudflare Worker
   const getWorkerStreamUrl = (url: string) => {
     if (!url) return "";
 
-    // Tách ID từ link googleapis.com/drive/v3/files/{ID}
+    // Tách ID từ link googleapis.com/drive/v3/files/...
     const matchApi = url.match(/\/files\/([a-zA-Z0-9_-]+)/);
     if (matchApi && matchApi[1]) {
-      return `${CLOUDFLARE_WORKER_URL}?id=${matchApi[1]}`;
+      return `${CLOUDFLARE_WORKER_URL}/?id=${matchApi[1]}`;
     }
 
-    // Tách ID từ link dạng /file/d/{ID}/view hoặc /preview
+    // Tách ID từ link dạng /file/d/.../view hoặc /preview
     const matchPath = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (matchPath && matchPath[1]) {
-      return `${CLOUDFLARE_WORKER_URL}?id=${matchPath[1]}`;
+      return `${CLOUDFLARE_WORKER_URL}/?id=${matchPath[1]}`;
     }
 
-    // Tách ID từ link dạng ?id={ID}
+    // Tách ID từ link dạng ?id=...
     const matchParam = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (matchParam && matchParam[1]) {
-      return `${CLOUDFLARE_WORKER_URL}?id=${matchParam[1]}`;
+      return `${CLOUDFLARE_WORKER_URL}/?id=${matchParam[1]}`;
     }
 
     return url;
   };
 
-  // Xử lý các link nhúng bên thứ 3 khác (nếu có)
+  // Xử lý các link nhúng bên thứ 3 khác (nếu có dùng xen kẽ)
   const formatEmbedUrl = (url: string) => {
     if (!url) return "";
     if (url.includes("streamtape.com/v/")) {
@@ -103,6 +103,7 @@ export default function VideoPlayer({
   return (
     <div className="relative w-full aspect-video bg-black overflow-hidden select-none touch-pan-y">
       {isGoogleDriveVideo(videoUrl) ? (
+        /* Trình phát HTML5 Video gốc: Không quảng cáo, chuẩn giao diện Mobile & PC */
         <video
           key={videoUrl}
           src={getWorkerStreamUrl(videoUrl)}
@@ -110,12 +111,12 @@ export default function VideoPlayer({
           playsInline
           preload="metadata"
           controlsList="nodownload"
-          crossOrigin="anonymous"
           className="absolute top-0 left-0 w-full h-full object-contain bg-black outline-none"
         >
           Trình duyệt của bạn không hỗ trợ phát video này.
         </video>
       ) : (
+        /* Dự phòng Iframe cho các nguồn bên ngoài khác */
         <iframe
           src={formatEmbedUrl(videoUrl)}
           className="absolute top-0 left-0 w-full h-full border-0 outline-none"
