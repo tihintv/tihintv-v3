@@ -10,8 +10,8 @@ interface Props {
   nextEpisodeNumber?: number;
 }
 
-// Điền mã API Key của bạn vào đây (hoặc đưa vào biến môi trường NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY)
-const GOOGLE_DRIVE_API_KEY = "AIzaSyCE1PLfcBWw2glAGYD9QCFUcukCXlvPbSY";
+// Thay đường dẫn Cloudflare Worker của em vào đây
+const CLOUDFLARE_WORKER_URL = "https://tihintv-stream.ten-cua-em.workers.dev";
 
 export default function VideoPlayer({
   slug,
@@ -57,37 +57,41 @@ export default function VideoPlayer({
     return () => clearInterval(timer);
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
-  // Kiểm tra xem có phải link Google Drive (hoặc link googleapis) không
+  // Kiểm tra xem có phải link Google Drive không
   const isGoogleDriveVideo = (url: string) => {
     if (!url) return false;
-    return url.includes("drive.google.com") || url.includes("googleapis.com/drive/v3/files/");
+    return (
+      url.includes("drive.google.com") ||
+      url.includes("googleapis.com/drive/v3/files/")
+    );
   };
 
-  // Tự động chuyển link Google Drive thường sang link luồng trực tiếp của Drive API v3
-  const getDirectDriveStreamUrl = (url: string) => {
+  // Tách ID từ link Google Drive và chuyển qua luồng Cloudflare Worker
+  const getWorkerStreamUrl = (url: string) => {
     if (!url) return "";
 
-    // Nếu đã là link googleapis.com/drive/v3/files/ thì giữ nguyên
-    if (url.includes("googleapis.com/drive/v3/files/")) {
-      return url;
+    // Tách ID từ link googleapis.com/drive/v3/files/{ID}
+    const matchApi = url.match(/\/files\/([a-zA-Z0-9_-]+)/);
+    if (matchApi && matchApi[1]) {
+      return `${CLOUDFLARE_WORKER_URL}?id=${matchApi[1]}`;
     }
 
-    // Tách mã ID từ link dạng /file/d/{ID}/view hoặc /preview
+    // Tách ID từ link dạng /file/d/{ID}/view hoặc /preview
     const matchPath = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (matchPath && matchPath[1]) {
-      return `https://www.googleapis.com/drive/v3/files/${matchPath[1]}?alt=media&key=${GOOGLE_DRIVE_API_KEY}`;
+      return `${CLOUDFLARE_WORKER_URL}?id=${matchPath[1]}`;
     }
 
-    // Tách mã ID từ link dạng ?id={ID}
+    // Tách ID từ link dạng ?id={ID}
     const matchParam = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (matchParam && matchParam[1]) {
-      return `https://www.googleapis.com/drive/v3/files/${matchParam[1]}?alt=media&key=${GOOGLE_DRIVE_API_KEY}`;
+      return `${CLOUDFLARE_WORKER_URL}?id=${matchParam[1]}`;
     }
 
     return url;
   };
 
-  // Xử lý các link nhúng bên thứ 3 khác (nếu có dùng xen kẽ)
+  // Xử lý các link nhúng bên thứ 3 khác (nếu có)
   const formatEmbedUrl = (url: string) => {
     if (!url) return "";
     if (url.includes("streamtape.com/v/")) {
@@ -99,20 +103,19 @@ export default function VideoPlayer({
   return (
     <div className="relative w-full aspect-video bg-black overflow-hidden select-none touch-pan-y">
       {isGoogleDriveVideo(videoUrl) ? (
-        /* Trình phát HTML5 Video gốc: Không quảng cáo, chuẩn giao diện Mobile & PC */
         <video
           key={videoUrl}
-          src={getDirectDriveStreamUrl(videoUrl)}
+          src={getWorkerStreamUrl(videoUrl)}
           controls
           playsInline
           preload="metadata"
           controlsList="nodownload"
+          crossOrigin="anonymous"
           className="absolute top-0 left-0 w-full h-full object-contain bg-black outline-none"
         >
           Trình duyệt của bạn không hỗ trợ phát video này.
         </video>
       ) : (
-        /* Dự phòng Iframe cho các nguồn bên ngoài khác */
         <iframe
           src={formatEmbedUrl(videoUrl)}
           className="absolute top-0 left-0 w-full h-full border-0 outline-none"
