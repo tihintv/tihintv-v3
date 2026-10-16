@@ -10,9 +10,6 @@ interface Props {
   nextEpisodeNumber?: number;
 }
 
-// Đường dẫn Cloudflare Worker của TiHinTV
-const CLOUDFLARE_WORKER_URL = "https://tihintv-stream.caothaiquocofficial.workers.dev";
-
 export default function VideoPlayer({
   slug,
   episode,
@@ -57,73 +54,44 @@ export default function VideoPlayer({
     return () => clearInterval(timer);
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
-  // Kiểm tra xem có phải link Google Drive không
-  const isGoogleDriveVideo = (url: string) => {
-    if (!url) return false;
-    return (
-      url.includes("drive.google.com") ||
-      url.includes("googleapis.com/drive/v3/files/")
-    );
-  };
-
-  // Tự động tách ID từ link Google Drive và chuyển qua luồng Cloudflare Worker
-  const getWorkerStreamUrl = (url: string) => {
+  // Chuẩn hóa link Google Drive sang dạng /preview để phát mượt mà ổn định nhất
+  const formatPreviewUrl = (url: string) => {
     if (!url) return "";
-
-    // Tách ID từ link googleapis.com/drive/v3/files/...
-    const matchApi = url.match(/\/files\/([a-zA-Z0-9_-]+)/);
-    if (matchApi && matchApi[1]) {
-      return `${CLOUDFLARE_WORKER_URL}/?id=${matchApi[1]}`;
-    }
-
-    // Tách ID từ link dạng /file/d/.../view hoặc /preview
-    const matchPath = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (matchPath && matchPath[1]) {
-      return `${CLOUDFLARE_WORKER_URL}/?id=${matchPath[1]}`;
-    }
-
-    // Tách ID từ link dạng ?id=...
-    const matchParam = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (matchParam && matchParam[1]) {
-      return `${CLOUDFLARE_WORKER_URL}/?id=${matchParam[1]}`;
-    }
-
-    return url;
-  };
-
-  // Xử lý các link nhúng bên thứ 3 khác (nếu có dùng xen kẽ)
-  const formatEmbedUrl = (url: string) => {
-    if (!url) return "";
+    
+    // Xử lý nếu là link streamtape (nếu có dùng lót dạ)
     if (url.includes("streamtape.com/v/")) {
       return url.replace("streamtape.com/v/", "streamtape.com/e/");
     }
+
+    if (url.includes("drive.google.com")) {
+      if (url.includes("/view")) {
+        return url.replace("/view", "/preview");
+      }
+      const match = url.match(/\/d\/([^/]+)/);
+      if (match && match[1]) {
+        return `https://drive.google.com/file/d/${match[1]}/preview`;
+      }
+    }
+    
+    // Nếu là link worker cũ thì bóc lại ID Google Drive để về /preview chính chủ
+    const matchWorker = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (matchWorker && matchWorker[1]) {
+      return `https://drive.google.com/file/d/${matchWorker[1]}/preview`;
+    }
+
     return url;
   };
 
   return (
-    <div className="relative w-full aspect-video bg-black overflow-hidden select-none touch-pan-y">
-      {isGoogleDriveVideo(videoUrl) ? (
-        /* Trình phát HTML5 Video gốc: Không quảng cáo, chuẩn giao diện Mobile & PC */
-        <video
-          key={videoUrl}
-          src={getWorkerStreamUrl(videoUrl)}
-          controls
-          playsInline
-          preload="metadata"
-          controlsList="nodownload"
-          className="absolute top-0 left-0 w-full h-full object-contain bg-black outline-none"
-        >
-          Trình duyệt của bạn không hỗ trợ phát video này.
-        </video>
-      ) : (
-        /* Dự phòng Iframe cho các nguồn bên ngoài khác */
-        <iframe
-          src={formatEmbedUrl(videoUrl)}
-          className="absolute top-0 left-0 w-full h-full border-0 outline-none"
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-        />
-      )}
+    <div className="relative w-full aspect-video bg-black overflow-hidden rounded-xl shadow-lg select-none touch-pan-y">
+      {/* Iframe Google Drive chuẩn chỉnh: Tự động co giãn 16:9, không lộ viền thừa trên mobile */}
+      <iframe
+        src={formatPreviewUrl(videoUrl)}
+        className="absolute top-0 left-0 w-full h-full border-0 outline-none"
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+        loading="lazy"
+      />
 
       {showAutoNext && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
