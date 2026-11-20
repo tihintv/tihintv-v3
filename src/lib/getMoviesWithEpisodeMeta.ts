@@ -15,14 +15,43 @@ type MovieRow = {
   content_type?: string;
 };
 
-type EpisodeRow = {
-  id: string;
+type EpisodeMetaRow = {
   movie_slug: string;
   episode_number: number;
-  title: string;
-  video_url: string;
-  created_at?: string;
 };
+
+// Lấy toàn bộ danh sách tập theo từng lô 1000 dòng để không bị giới hạn mặc định của Supabase
+async function fetchAllEpisodeMeta(): Promise<EpisodeMetaRow[]> {
+  const PAGE_SIZE = 1000;
+  let allEpisodes: EpisodeMetaRow[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("episodes")
+      .select("movie_slug, episode_number")
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    allEpisodes = allEpisodes.concat(data as EpisodeMetaRow[]);
+
+    if (data.length < PAGE_SIZE) {
+      break;
+    }
+
+    from += PAGE_SIZE;
+  }
+
+  return allEpisodes;
+}
 
 export async function getMoviesWithEpisodeMeta() {
   const { data: movies, error: moviesError } = await supabase
@@ -35,11 +64,11 @@ export async function getMoviesWithEpisodeMeta() {
     return [];
   }
 
-  const { data: episodes, error: episodesError } = await supabase
-    .from("episodes")
-    .select("*");
+  let episodes: EpisodeMetaRow[] = [];
 
-  if (episodesError) {
+  try {
+    episodes = await fetchAllEpisodeMeta();
+  } catch (episodesError) {
     console.error("Supabase episodes error:", episodesError);
     return (movies || []).map((movie: MovieRow) => ({
       ...movie,
@@ -48,25 +77,26 @@ export async function getMoviesWithEpisodeMeta() {
     }));
   }
 
-  const grouped = new Map<string, EpisodeRow[]>();
+  const grouped = new Map<string, number[]>();
 
-  for (const episode of (episodes || []) as EpisodeRow[]) {
+  for (const episode of episodes) {
+    const epNum = Number(episode.episode_number);
+    if (!episode.movie_slug || Number.isNaN(epNum)) continue;
+
     const current = grouped.get(episode.movie_slug) || [];
-    current.push(episode);
+    current.push(epNum);
     grouped.set(episode.movie_slug, current);
   }
 
   return (movies || []).map((movie: MovieRow) => {
-    const movieEpisodes = grouped.get(movie.slug) || [];
+    const episodeNumbers = grouped.get(movie.slug) || [];
     const latestEpisodeNumber =
-      movieEpisodes.length > 0
-        ? Math.max(...movieEpisodes.map((ep) => ep.episode_number))
-        : null;
+      episodeNumbers.length > 0 ? Math.max(...episodeNumbers) : null;
 
     return {
       ...movie,
       episode_count:
-        movie.content_type === "series" ? movieEpisodes.length : 0,
+        movie.content_type === "series" ? episodeNumbers.length : 0,
       latest_episode_number:
         movie.content_type === "series" ? latestEpisodeNumber : null,
     };
