@@ -3,7 +3,7 @@ import SiteHeader from "@/components/SiteHeader";
 import WatchTracker from "@/components/WatchTracker";
 import { getMoviesWithEpisodeMeta } from "@/lib/getMoviesWithEpisodeMeta";
 import { getEpisodes } from "@/lib/getEpisodes";
-import { formatPreviewUrl } from "@/lib/formatPreviewUrl";
+import VideoPlayer from "@/components/VideoPlayer";
 
 export default async function WatchPage({
   params,
@@ -60,20 +60,14 @@ export default async function WatchPage({
           {movie.title}
         </h1>
 
-        {/* Khung 16:9 duy nhất. Link phim lẻ trước đây dùng thẳng
-            movie.video_url nên link /view, uc hay ?id= đều không được
-            chuẩn hoá về /preview — giờ dùng chung formatPreviewUrl
-            với VideoPlayer, vẫn giữ /preview, không đổi sang uc. */}
-        <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl max-sm:h-[calc(100vw*9/16+200px)] max-sm:max-h-[460px] sm:aspect-video">
-          <iframe
-            src={formatPreviewUrl(movie.video_url || "")}
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            className="absolute top-0 left-0 block h-full w-full border-0"
-            allowFullScreen
-            loading="lazy"
-            title={movie.title}
-          />
-        </div>
+        {/* Phim lẻ dùng chung VideoPlayer (trình phát riêng, nút tự ẩn).
+            Nếu stream lỗi thì VideoPlayer tự rơi về iframe /preview. */}
+        <VideoPlayer
+          slug={movie.slug}
+          episode={1}
+          videoUrl={movie.video_url || ""}
+          title={movie.title}
+        />
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
           <h2 className="text-lg font-semibold text-white">Mô tả</h2>

@@ -66,3 +66,42 @@
 - Trang test A/B: khung A đỏ 16:9 cũ vs khung B xanh cao hơn 200px,
   cùng file Triage X ep10 — cần người dùng mở trên điện thoại và xác
   nhận khung B hiện đủ nút trước khi coi v2 là xong.
+
+
+---
+
+# Bản v3 — trình phát riêng, nút tự ẩn (chưa gửi, chờ test)
+
+## Vấn đề
+- Bản v2 đã sửa được nút bị cắt trên điện thoại, nhưng nút của iframe
+  Drive KHÔNG tự ẩn khi đang phát (kiểm chứng 22:34-22:36: để yên
+  10-15 giây nút vẫn hiện nguyên; chạm giữa video chỉ tạm dừng).
+  Nút là của Drive, code web không can thiệp được từ ngoài.
+
+## Đã đổi (v3)
+- `src/app/api/stream/route.ts` (mới): proxy stream video. Trình
+  duyệt gọi /api/stream?fileId=... (cùng origin), route chuyển tiếp
+  header Range sang Drive API (alt=media) với khóa ở biến môi trường
+  phía máy chủ GOOGLE_DRIVE_API_KEY, trả về 206 + Content-Range để
+  tua được. `fileId=demo` phát video mẫu Sintel trailer để test
+  không cần khóa. Không dùng uc (file >100MB bị chặn virus-scan).
+- `src/components/VideoPlayer.tsx` (viết lại): thẻ <video> + nút
+  điều khiển của web — Play/Tạm dừng, tua ±10s, thanh tua (kéo/chạm
+  để tua, hiện cả phần đã đệm), thời gian, âm lượng, tốc độ phát
+  (0.5x-2x), toàn màn hình. Nút tự ẩn sau 3 giây khi đang phát,
+  chạm/di chuột vào thì hiện lại; tạm dừng thì nút luôn hiện.
+  Khung trở lại 16:9 trên mọi màn hình (nút nổi trên video).
+  Stream lỗi (chưa có khóa, file chưa công khai...) thì tự rơi về
+  iframe /preview như bản v2, web không bao giờ đen màn hình.
+- `src/app/watch/[slug]/page.tsx` (phim lẻ): dùng chung VideoPlayer.
+- `src/app/test-player/page.tsx` (mới): trang test trình phát bằng
+  video mẫu, mở /test-player là xem được, không cần khóa API.
+- `.env.example` (mới): hướng dẫn lấy khóa Drive API và dán vào
+  Vercel (Settings > Environment Variables > GOOGLE_DRIVE_API_KEY),
+  rồi Redeploy. Không commit khóa vào GitHub.
+
+## Cách test
+- Chưa có khóa: mở /test-player — phải phát được video mẫu, nút tự
+  ẩn sau 3 giây, tua được. Phim thật sẽ rơi về iframe /preview.
+- Có khóa: thêm GOOGLE_DRIVE_API_KEY trên Vercel, redeploy, mở một
+  tập phim thật — phải phát bằng trình phát riêng, nút tự ẩn.
