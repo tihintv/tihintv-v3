@@ -129,3 +129,25 @@
   ipRefererBlocked (khóa bị giới hạn referrer), keyInvalid (khóa
   sai), forbidden (file không có quyền). Trình phát vẫn tự rơi về
   iframe như trước khi stream lỗi.
+
+
+---
+
+# Bản v3.2 — giới hạn mỗi đoạn stream 8MB (chỉ đổi route stream)
+
+## Vấn đề (người dùng test kỹ và báo lại 00:17)
+- Lúc đầu trình phát riêng CÓ chạy, nhưng web rất LAG, video tải
+  rất chậm; sau 1-2 lần refresh thì trang quay lại khung Drive cũ.
+- Nguyên nhân: trình phát <video> xin cả file 1.6GB trong MỘT yêu
+  cầu (Range: bytes=0-), route phải giữ function chạy suốt để
+  truyền hết file, Vercel cắt function giữa chừng vì quá giới hạn
+  thời gian chạy, video nhận lỗi rồi tự rơi về iframe /preview.
+  Đó cũng là lý do video tải chậm: dữ liệu đi vòng qua Vercel mà
+  còn bị cắt giữa chừng rồi tải lại.
+
+## Đã đổi (v3.2, chỉ 1 file)
+- `src/app/api/stream/route.ts`: mỗi yêu cầu chỉ lấy tối đa 8MB.
+  Yêu cầu không giới hạn (bytes=0-) hay dài hơn 8MB đều được viết
+  lại thành đoạn 8MB, trả về 206 + Content-Range đúng đoạn đó;
+  trình phát hết đoạn này thì tự xin đoạn tiếp theo. Không đổi
+  khóa API, không cần cấu hình thêm gì trên Vercel.

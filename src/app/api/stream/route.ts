@@ -51,9 +51,30 @@ export async function GET(req: Request) {
     upstream = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${apiKey}`;
   }
 
+  // GIỚI HẠN MỖI ĐOẠN 8MB (v3.2) — đây là lỗi khiến bản v3 lúc đầu
+  // chạy chậm rồi rơi về iframe cũ: trình phát <video> xin cả file
+  // 1.6GB trong MỘT yêu cầu (Range: bytes=0-), route phải giữ
+  // function chạy suốt để truyền hết file, Vercel cắt function giữa
+  // chừng (giới hạn thời gian chạy), video nhận lỗi rồi rơi về
+  // iframe. Giới hạn mỗi yêu cầu tối đa 8MB thì function xong trong
+  // vài giây, trình phát hết đoạn này thì tự xin đoạn tiếp theo.
+  const MAX_CHUNK = 8 * 1024 * 1024;
   const headers: Record<string, string> = {};
   const range = req.headers.get("range");
-  if (range) headers["range"] = range;
+  if (range) {
+    const m = range.match(/bytes=(\d+)-(\d*)/);
+    if (m) {
+      const start = Number(m[1]);
+      const end = m[2] === "" ? start + MAX_CHUNK - 1 : Number(m[2]);
+      const cappedEnd = Math.min(end, start + MAX_CHUNK - 1);
+      headers["range"] = `bytes=${start}-${cappedEnd}`;
+    } else {
+      // Range dạng khác (ví dụ bytes=-500): giữ nguyên.
+      headers["range"] = range;
+    }
+  } else {
+    headers["range"] = `bytes=0-${MAX_CHUNK - 1}`;
+  }
 
   let upstreamRes: Response;
   try {
