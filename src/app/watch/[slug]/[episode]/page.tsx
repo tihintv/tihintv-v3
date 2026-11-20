@@ -106,18 +106,15 @@ export default async function WatchEpisodePage({
           </div>
         </div>
 
-        {/* --- CHIẾC LỒNG TỶ LỆ 16:9 DÀNH RIÊNG CHO ĐIỆN THOẠI --- */}
-        <div className="relative w-full aspect-video overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
-          <div className="absolute top-0 left-0 w-full h-full">
-            <VideoPlayer
-              slug={slug}
-              episode={currentEpisode.episode_number}
-              videoUrl={currentEpisode.video_url}
-              nextEpisodeNumber={nextEpisode?.episode_number}
-            />
-          </div>
-        </div>
-        {/* ------------------------------------------------------ */}
+        {/* VideoPlayer đã là khung 16:9 duy nhất, không bọc thêm
+            khung aspect-video ở ngoài nữa — bọc 2 lớp làm khung bị
+            hụt / méo trên điện thoại. */}
+        <VideoPlayer
+          slug={slug}
+          episode={currentEpisode.episode_number}
+          videoUrl={currentEpisode.video_url}
+          nextEpisodeNumber={nextEpisode?.episode_number}
+        />
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-4 md:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatPreviewUrl } from "@/lib/formatPreviewUrl";
 
 interface Props {
   slug: string;
@@ -54,40 +55,22 @@ export default function VideoPlayer({
     return () => clearInterval(timer);
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
-  const formatPreviewUrl = (url: string) => {
-    if (!url) return "";
-    
-    if (url.includes("streamtape.com/v/")) {
-      return url.replace("streamtape.com/v/", "streamtape.com/e/");
-    }
-
-    if (url.includes("drive.google.com")) {
-      if (url.includes("/view")) {
-        return url.replace("/view", "/preview");
-      }
-      const match = url.match(/\/d\/([^/]+)/);
-      if (match && match[1]) {
-        return `https://drive.google.com/file/d/${match[1]}/preview`;
-      }
-    }
-    
-    const matchWorker = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (matchWorker && matchWorker[1]) {
-      return `https://drive.google.com/file/d/${matchWorker[1]}/preview`;
-    }
-
-    return url;
-  };
-
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-black shadow-2xl select-none touch-pan-y" style={{ paddingBottom: '56.25%' }}>
-      {/* Khung chứa iframe chuẩn tuyệt đối tỷ lệ 16:9, không bị bóp méo trên di động */}
+    // Khung 16:9 duy nhất, co giãn theo màn hình.
+    // KHÔNG dùng paddingBottom 56.25% ở đây nữa và KHÔNG bọc thêm
+    // một khung aspect-video nào ở ngoài nữa — bọc 2 lớp là nguyên
+    // nhân khung bị hụt / méo trên điện thoại.
+    // Link vẫn giữ dạng /preview của Drive (xem formatPreviewUrl):
+    // KHÔNG đổi sang uc?export=download, file >100MB sẽ bị Google
+    // chặn bằng trang cảnh báo virus-scan và <video> sẽ đen.
+    <div className="relative w-full aspect-video overflow-hidden rounded-2xl bg-black shadow-2xl">
       <iframe
         src={formatPreviewUrl(videoUrl)}
-        className="absolute top-0 left-0 w-full h-full border-0 outline-none"
-        allow="autoplay; fullscreen; picture-in-picture"
+        className="absolute top-0 left-0 block h-full w-full border-0 outline-none"
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
         allowFullScreen
         loading="lazy"
+        title={`Tập ${episode}`}
       />
 
       {showAutoNext && (
