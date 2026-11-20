@@ -44,3 +44,25 @@
 3. Vercel tự deploy lại `tihintv-v3.vercel.app` trong 1-2 phút.
 4. Kiểm tra trên điện thoại bằng tập Triage X ep10: khung phải lấp
    đầy chiều ngang, không bị cắt 2 bên, bấm fullscreen được.
+
+
+---
+
+# Bản sửa v2 — khung cao hơn trên điện thoại (chưa gửi, chờ test A/B)
+
+## Bằng chứng
+- Mở thẳng link Drive /preview trên điện thoại (22:09): video + thanh
+  tua + 2 hàng nút hiện đầy đủ, không bị cắt.
+- Nhúng trong khung 16:9 trên điện thoại: nút bị tràn ra ngoài khung
+  và bị overflow-hidden cắt mất (đã test trên iPhone XS, 11 Pro,
+  17 Pro Max, POCO X3 Pro và F12 426x832).
+- Máy tính vẫn đúng vì khung cao 623px, nút nhỏ nên vừa.
+
+## Đã đổi (v2)
+- `src/components/VideoPlayer.tsx` và `src/app/watch/[slug]/page.tsx`
+  (phim lẻ): trên điện thoại (<640px) chiều cao khung =
+  chiều cao video 16:9 + 200px, tối đa 460px; từ 640px trở lên vẫn
+  `aspect-video` như cũ. Không đổi link, vẫn giữ /preview, không dùng uc.
+- Trang test A/B: khung A đỏ 16:9 cũ vs khung B xanh cao hơn 200px,
+  cùng file Triage X ep10 — cần người dùng mở trên điện thoại và xác
+  nhận khung B hiện đủ nút trước khi coi v2 là xong.

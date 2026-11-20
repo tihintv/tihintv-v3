@@ -56,14 +56,17 @@ export default function VideoPlayer({
   }, [showAutoNext, slug, nextEpisodeNumber, router]);
 
   return (
-    // Khung 16:9 duy nhất, co giãn theo màn hình.
-    // KHÔNG dùng paddingBottom 56.25% ở đây nữa và KHÔNG bọc thêm
-    // một khung aspect-video nào ở ngoài nữa — bọc 2 lớp là nguyên
-    // nhân khung bị hụt / méo trên điện thoại.
+    // Desktop: khung 16:9 duy nhất (sm:aspect-video).
+    // Điện thoại (<640px): khung CAO HƠN video 200px, tối đa 460px.
+    // Lý do đã kiểm chứng 22:09-22:10: mở thẳng link Drive /preview
+    // trên điện thoại thì nút hiện đầy đủ, còn nhúng trong khung 16:9
+    // thì trình phát Drive cần thêm ~200px cho 2 hàng nút cảm ứng to
+    // ở dưới video, bị tràn ra ngoài và bị overflow-hidden cắt mất.
+    // KHÔNG dùng paddingBottom 56.25% và KHÔNG bọc thêm khung nào nữa.
     // Link vẫn giữ dạng /preview của Drive (xem formatPreviewUrl):
     // KHÔNG đổi sang uc?export=download, file >100MB sẽ bị Google
     // chặn bằng trang cảnh báo virus-scan và <video> sẽ đen.
-    <div className="relative w-full aspect-video overflow-hidden rounded-2xl bg-black shadow-2xl">
+    <div className="relative w-full overflow-hidden rounded-2xl bg-black shadow-2xl max-sm:h-[calc(100vw*9/16+200px)] max-sm:max-h-[460px] sm:aspect-video">
       <iframe
         src={formatPreviewUrl(videoUrl)}
         className="absolute top-0 left-0 block h-full w-full border-0 outline-none"

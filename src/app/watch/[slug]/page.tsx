@@ -64,7 +64,7 @@ export default async function WatchPage({
             movie.video_url nên link /view, uc hay ?id= đều không được
             chuẩn hoá về /preview — giờ dùng chung formatPreviewUrl
             với VideoPlayer, vẫn giữ /preview, không đổi sang uc. */}
-        <div className="relative w-full aspect-video overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+        <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl max-sm:h-[calc(100vw*9/16+200px)] max-sm:max-h-[460px] sm:aspect-video">
           <iframe
             src={formatPreviewUrl(movie.video_url || "")}
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
