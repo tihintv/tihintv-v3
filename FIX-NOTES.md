@@ -105,3 +105,27 @@
   ẩn sau 3 giây, tua được. Phim thật sẽ rơi về iframe /preview.
 - Có khóa: thêm GOOGLE_DRIVE_API_KEY trên Vercel, redeploy, mở một
   tập phim thật — phải phát bằng trình phát riêng, nút tự ẩn.
+
+
+---
+
+# Bản v3.1 — chẩn đoán lỗi 403 của Google (chỉ đổi route stream)
+
+## Vấn đề
+- Trang /test-player chạy tốt (demo 206), code v3 đã deploy, khóa
+  GOOGLE_DRIVE_API_KEY đã có trên Vercel, nhưng tập phim thật vẫn
+  rơi về iframe Drive cũ. Kiểm tra trực tiếp đường stream với file
+  Triage X ep10: Google trả 403 Forbidden, rỗng — tức là khóa đã có
+  trong môi trường nhưng Google từ chối. Nguyên nhân thường gặp:
+  Drive API chưa bật trong project của khóa, khóa bị giới hạn chỉ
+  cho API khác, khóa bị giới hạn theo app/referrer (ví dụ khóa tạo
+  cho app Android), hoặc khóa sai.
+
+## Đã đổi (v3.1, chỉ 1 file)
+- `src/app/api/stream/route.ts`: khi upstream lỗi thì không trả về
+  body rỗng nữa mà trả JSON gồm upstreamStatus + reason + message
+  gốc của Google (đã ẩn số project dài) để đọc được lý do chính
+  xác, ví dụ accessNotConfigured (chưa bật Drive API),
+  ipRefererBlocked (khóa bị giới hạn referrer), keyInvalid (khóa
+  sai), forbidden (file không có quyền). Trình phát vẫn tự rơi về
+  iframe như trước khi stream lỗi.

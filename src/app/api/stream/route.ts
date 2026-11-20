@@ -66,9 +66,27 @@ export async function GET(req: Request) {
   }
 
   if (!upstreamRes.ok || !upstreamRes.body) {
-    // 404/403 (file không công khai, sai ID...) — trình phát sẽ
-    // tự rơi về iframe /preview để Drive tự báo lỗi của nó.
-    return new Response(null, { status: upstreamRes.status });
+    // 404/403 (khóa sai, Drive API chưa bật, khóa bị giới hạn,
+    // file không công khai, sai ID...) — trả về lý do gốc của Google
+    // (chỉ reason + message, đã ẩn số project) để chẩn đoán được
+    // chính xác thay vì chỉ thấy status. Trình phát vẫn tự rơi về
+    // iframe /preview khi gặp lỗi này.
+    let reason = "unknown";
+    let message = "";
+    try {
+      const text = await upstreamRes.text();
+      const parsed = JSON.parse(text) as {
+        error?: { message?: string; errors?: { reason?: string }[] };
+      };
+      reason = parsed.error?.errors?.[0]?.reason || "unknown";
+      message = (parsed.error?.message || "").replace(/\b\d{6,}\b/g, "***");
+    } catch {
+      // Không đọc được body lỗi thì giữ nguyên status.
+    }
+    return Response.json(
+      { error: "Google Drive từ chối yêu cầu", upstreamStatus: upstreamRes.status, reason, message },
+      { status: upstreamRes.status }
+    );
   }
 
   const outHeaders = new Headers();
