@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { Movie } from "@/data/movies";
 
@@ -36,13 +37,21 @@ export default function HeroBanner({
         {movies.map((movie, index) => (
           <div
             key={movie.slug}
-            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
               index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
-            style={{
-              backgroundImage: `url(${movie.banner || movie.poster})`,
-            }}
           >
+            {/* Dùng next/image thay cho background-image: ảnh được nén
+                đúng kích thước khung (thay vì tải nguyên file gốc
+                2000-3000px), slide đầu tiên tải ưu tiên. */}
+            <Image
+              src={movie.banner || movie.poster}
+              alt={movie.title}
+              fill
+              priority={index === 0}
+              sizes="100vw"
+              className="object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/20" />
           </div>
         ))}

@@ -151,3 +151,82 @@
   lại thành đoạn 8MB, trả về 206 + Content-Range đúng đoạn đó;
   trình phát hết đoạn này thì tự xin đoạn tiếp theo. Không đổi
   khóa API, không cần cấu hình thêm gì trên Vercel.
+
+
+---
+
+# Bản v4 — sửa lỗi build thất bại + tối ưu tốc độ tải trang (21/11)
+
+## 1. Lỗi build: 4 lần deploy liên tiếp thất bại trên Vercel
+
+### Nguyên nhân (đã kiểm chứng bằng `tsc` trên code GitHub hiện tại)
+Khi quay lại v2, file `VideoPlayer.tsx` được thay bằng bản v2
+(không còn prop `title`), nhưng trang test trình phát riêng
+`src/app/test-player/page.tsx` (còn sót lại từ v3) vẫn truyền
+prop `title` vào VideoPlayer:
+
+```
+src/app/test-player/page.tsx(30,11): error TS2322:
+Property 'title' does not exist on type 'IntrinsicAttributes & Props'.
+```
+
+`next build` kiểm tra TypeScript nên Vercel build thất bại cả 4
+lần "Add files via upload" (21:24-21:33). Hai lần deploy xóa
+thư mục `src/app/api` trước đó vẫn thành công vì lúc đó
+VideoPlayer còn là bản v3 (có prop `title`).
+
+### Đã sửa
+- Xóa `src/app/test-player/page.tsx` (trang test của v3, không
+  còn dùng được vì route `/api/stream` đã bị xóa).
+- Xóa `src/lib/driveStream.ts` (code phụ của v3, không còn file
+  nào import nó).
+- Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS trên máy
+  test (build hoàn tất, đủ 8 route; lỗi TLS trong log build chỉ
+  là Supabase giả lập không truy cập được, code đã bắt lỗi và
+  trả về danh sách rỗng — trên Vercel dùng khóa thật nên không
+  gặp lỗi này).
+
+## 2. Mục "Tập mới cập nhật" trên trang chủ luôn trống
+
+### Nguyên nhân
+`src/lib/getLatestEpisodes.ts` join bảng `movies (title, poster)`
+nhưng Supabase không có khóa ngoại giữa `episodes.movie_slug` và
+`movies.slug` nên câu query luôn lỗi, thử lại 1 lần rồi trả về []
+→ mục này không bao giờ hiện (trang chủ chỉ còn mục
+"Mới cập nhật" lấy từ danh sách phim).
+
+### Đã sửa
+- Bỏ join `movies`: lấy 12 tập mới nhất từ bảng `episodes`
+  trước, rồi lấy tên + poster phim bằng 1 câu query riêng theo
+  slug (`.in("slug", slugs)`). Kiểu dữ liệu trả về giữ nguyên,
+  trang hiển thị không đổi.
+
+## 3. Tối ưu tốc độ tải trang chủ
+
+- `src/components/HeroBanner.tsx`: ảnh nền slide trước đây là
+  CSS `background-image` tải nguyên file gốc (2000-3000px,
+  ~400KB/ảnh, cả 5 slide đều tải ngay). Đổi sang `next/image`
+  (`fill`, slide đầu `priority`, `sizes="100vw"`): ảnh được nén
+  đúng cỡ khung hiển thị.
+- `src/components/LatestEpisodesSection.tsx`: thumbnail tập mới
+  trước đây là thẻ `<img>` thường, tải nguyên file poster gốc.
+  Đổi sang `next/image` (`fill`, `sizes` theo lưới): chỉ tải
+  đúng cỡ cần hiển thị.
+- `src/components/MovieCard.tsx`: đã có `sizes` đúng từ trước
+  nên không đổi (trình duyệt đã tự chọn cỡ ảnh phù hợp, không
+  phải tải bản 3840px).
+- Poster phim "Đám Cưới Đom Đóm - Firefly Wedding"
+  (`public/images/firefly-wedding.jpg`, 443KB, JPEG 2000x3000)
+  đã có trong repo (bạn upload lên GitHub 21:33) nên sau lần
+  deploy thành công này ảnh sẽ hiện lại. Phim này vẫn chưa có
+  tập nào trong database — cần thêm tập 1 qua Admin Episode Form
+  thì nút "Xem ngay" mới hết 404.
+
+## Lưu ý khác
+- Thư mục `public/images/` hiện có 116 ảnh, tổng ~53MB — không
+  ảnh hưởng tốc độ tải trang nhưng làm mỗi lần clone/deploy phải
+  tải 53MB. Về lâu dài có thể chuyển poster sang host ảnh riêng,
+  hiện tại cứ để nguyên.
+- Route `/api/stream` và trang `/test-player` của v3 đã được dọn
+  sạch; biến `GOOGLE_DRIVE_API_KEY` trên Vercel không còn dùng
+  nữa, muốn thì xóa.

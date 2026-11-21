@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 type Episode = {
@@ -44,10 +45,15 @@ export default function LatestEpisodesSection({
               className="group overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition hover:-translate-y-1 hover:bg-white/10"
             >
               <div className="relative aspect-video overflow-hidden bg-neutral-900">
-                <img
+                {/* Dùng next/image thay cho <img>: trước đây tải nguyên
+                    file poster gốc (2000-3000px), giờ chỉ tải đúng cỡ
+                    khung hiển thị. */}
+                <Image
                   src={movie.poster}
                   alt={movie.title}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover transition duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                 <div className="absolute left-3 top-3 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white">
