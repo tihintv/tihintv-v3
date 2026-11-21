@@ -3,14 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import HeroBanner from "@/components/HeroBanner";
 import SectionGrid from "@/components/SectionGrid";
-import LatestEpisodesSection from "@/components/LatestEpisodesSection";
 import ContinueWatchingSection from "@/components/ContinueWatchingSection";
 import useDebounce from "@/hooks/useDebounce";
 import { getMoviesFromCache, saveMoviesToCache } from "@/lib/movieCache";
-import {
-  getLatestEpisodesFromCache,
-  saveLatestEpisodesToCache,
-} from "@/lib/latestEpisodeCache";
 
 type Movie = {
   id?: string;
@@ -29,20 +24,8 @@ type Movie = {
   total_episodes?: number | null;
 };
 
-type LatestEpisode = {
-  id?: string;
-  movie_slug: string;
-  episode_number: number;
-  title: string;
-  video_url: string;
-  created_at?: string;
-  movie_title?: string;
-  movie_poster?: string;
-};
-
 type Props = {
   movies: Movie[];
-  latestEpisodes: LatestEpisode[];
 };
 
 type ContentFilter = "all" | "movie" | "series";
@@ -58,14 +41,11 @@ function normalizeVietnamese(text: string) {
     .trim();
 }
 
-export default function HomeClient({ movies, latestEpisodes }: Props) {
+export default function HomeClient({ movies }: Props) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
 
   const [displayMovies, setDisplayMovies] = useState<Movie[]>(movies);
-  const [displayLatestEpisodes, setDisplayLatestEpisodes] =
-    useState<LatestEpisode[]>(latestEpisodes);
-
   const [contentFilter, setContentFilter] = useState<ContentFilter>("all");
   const [genreFilter, setGenreFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
@@ -83,19 +63,6 @@ export default function HomeClient({ movies, latestEpisodes }: Props) {
       setDisplayMovies(cachedMovies);
     }
   }, [movies]);
-
-  useEffect(() => {
-    if (latestEpisodes.length > 0) {
-      setDisplayLatestEpisodes(latestEpisodes);
-      saveLatestEpisodesToCache(latestEpisodes);
-      return;
-    }
-
-    const cachedEpisodes = getLatestEpisodesFromCache();
-    if (cachedEpisodes.length > 0) {
-      setDisplayLatestEpisodes(cachedEpisodes);
-    }
-  }, [latestEpisodes]);
 
   const featuredMovies = useMemo(() => {
     const featured = displayMovies.filter((movie) => movie.featured);
@@ -376,10 +343,6 @@ export default function HomeClient({ movies, latestEpisodes }: Props) {
           </section>
         ) : (
           <>
-            {!isSearching && displayLatestEpisodes.length > 0 ? (
-              <LatestEpisodesSection episodes={displayLatestEpisodes as any} movies={movies as any} />
-            ) : null}
-
             <SectionGrid
               id="moi-cap-nhat"
               title="Mới cập nhật"

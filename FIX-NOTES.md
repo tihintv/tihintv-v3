@@ -230,3 +230,28 @@ nhưng Supabase không có khóa ngoại giữa `episodes.movie_slug` và
 - Route `/api/stream` và trang `/test-player` của v3 đã được dọn
   sạch; biến `GOOGLE_DRIVE_API_KEY` trên Vercel không còn dùng
   nữa, muốn thì xóa.
+
+
+---
+
+# Bản v4.1 — bỏ mục "Tập mới cập nhật" khỏi trang chủ (21/11)
+
+## Lý do
+Mục "Tập mới cập nhật" (12 ô tập phim) làm trang chủ nhìn rườm
+rà. Người dùng yêu cầu bỏ hẳn mục này.
+
+## Đã đổi
+- `src/app/page.tsx`: trang chủ chỉ lấy danh sách phim, không
+  lấy danh sách tập mới nữa (bớt 1 truy vấn Supabase mỗi lần tải
+  trang, trang chủ nhẹ hơn).
+- `src/components/HomeClient.tsx`: bỏ import, type, state,
+  effect và khối hiển thị của mục "Tập mới cập nhật".
+- Xóa 3 file chỉ phục vụ mục này:
+  `src/components/LatestEpisodesSection.tsx`,
+  `src/lib/getLatestEpisodes.ts`,
+  `src/lib/latestEpisodeCache.ts`.
+- Không đổi gì khác: mục "Mới cập nhật", "Phim bộ", "Phim lẻ",
+  banner, tìm kiếm và nút "Xem ngay" giữ nguyên. Trang xem phim
+  lẻ vẫn tự chuyển tới tập mới nhất như trước (logic đó nằm ở
+  trang watch, không liên quan mục này).
+- Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS (8 route).
