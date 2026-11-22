@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import MovieCard from "@/components/MovieCard";
 import useDebounce from "@/hooks/useDebounce";
+import { compareUpdatedDesc } from "@/lib/compareUpdatedDesc";
 
 type Movie = {
   slug: string;
@@ -80,7 +81,7 @@ export default function MoviesClient({ movies }: Props) {
 
         case "updated":
         default:
-          return (a.updated_at || "") < (b.updated_at || "") ? 1 : -1;
+          return compareUpdatedDesc(a.updated_at, b.updated_at, a.slug, b.slug);
       }
     });
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { movies as defaultMovies, type Movie } from "@/data/movies";
 import { getStoredMovies } from "@/lib/movieStorage";
+import { compareUpdatedDesc } from "@/lib/compareUpdatedDesc";
 
 export function useAllMovies() {
   const [storedMovies, setStoredMovies] = useState<Movie[]>([]);
@@ -25,7 +26,7 @@ export function useAllMovies() {
     }
 
     return Array.from(map.values()).sort((a, b) =>
-      a.updatedAt < b.updatedAt ? 1 : -1
+      compareUpdatedDesc(a.updatedAt, b.updatedAt, a.slug, b.slug)
     );
   }, [storedMovies]);
 

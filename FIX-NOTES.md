@@ -385,3 +385,54 @@ hàng (bản v4.3) thì gần như không nhìn thấy. Admin vẫn báo
   tập); Admin không cần sửa vì thông báo "Phim đã được đẩy lên
   Top!" giờ đã đúng sự thật.
 - Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS.
+
+
+---
+
+# Bản v4.5 — phim mới thêm lúc hiện lúc mất khỏi các mục trang chủ (22/11)
+
+## Triệu chứng
+Phim "Hậu Cung Giả Tạo - Giji Harem" mới thêm: lúc mới thêm
+(chưa có tập) thì hiện ở "Mới cập nhật", thêm tập vào thì hiện
+kèm tập mới, rồi sau đó chỉ còn thấy ở "Tất cả phim", không thấy
+ở "Mới cập nhật" và "Phim bộ" nữa (dù dữ liệu đã có đủ trong
+Supabase và trang chi tiết vẫn hiện đủ tập).
+
+## Nguyên nhân (đã kiểm chứng bằng dữ liệu thật trên web live)
+Kiểm tra HTML trang chủ live thấy 2 mục xếp thứ tự khác nhau
+một cách vô lý: 5 phim cuối của "Mới cập nhật" và "Phim bộ" là
+cùng 5 phim nhưng theo thứ tự NGƯỢC nhau, còn Giji Harem đứng
+thứ 2 ở "Phim bộ" nhưng hoàn toàn vắng mặt ở "Mới cập nhật".
+- Lỗi nằm ở hàm so sánh khi xếp phim theo updated_at, viết ở
+  4 chỗ: `(a.updated_at || "") < (b.updated_at || "") ? 1 : -1`.
+  Khi 2 phim có cùng updated_at (phim cũ chưa có updated_at,
+  hoặc nhiều phim cập nhật cùng lúc) thì hàm trả về -1 thay vì
+  0, tức là vừa bảo "a trước b" vừa bảo "b trước a" — vi phạm
+  quy tắc của Array.sort. Kết quả: cùng một dữ liệu mà sort 2
+  lần cho ra 2 thứ tự khác nhau, phim lúc hiện lúc mất khỏi
+  top 10 một cách ngẫu nhiên. Đã chứng minh bằng script Node:
+  sort cũ cho 2 kết quả khác nhau, sort mới cho 2 kết quả
+  giống hệt nhau.
+- Lỗi thứ 2 (do bản v4.3): mục "Phim bộ" / "Phim lẻ" xáo trộn
+  toàn bộ nên một phim cụ thể chỉ có ~10/108 cơ hội lọt vào
+  10 phim đang hiện — phim vừa thêm thường không thấy ở đó.
+
+## Đã sửa
+- Mới: `src/lib/compareUpdatedDesc.ts` — hàm so sánh dùng
+  chung, trả về 0 khi bằng nhau + tie-breaker theo slug để thứ
+  tự luôn ổn định và giống nhau ở mọi mục, mọi lần tải. Phim
+  chưa có updated_at xếp cuối cùng.
+- `src/components/HomeClient.tsx`: dùng hàm so sánh chung cho
+  cả 2 chỗ sort (filteredMovies và latestMovies) nên "Mới cập
+  nhật", "Phim bộ", "Phim lẻ", "Tất cả phim" giờ cùng một thứ
+  tự. Mục "Phim bộ" / "Phim lẻ" đổi sang ghim 3 phim mới cập
+  nhật nhất lên đầu rồi mới xáo trộn 7 phim còn lại — phim vừa
+  thêm/cập nhật luôn nhìn thấy trong mục của nó, mỗi lần tải
+  lại trang vẫn thấy các phim khác.
+- `src/components/MoviesClient.tsx` (trang /movies) và
+  `src/hooks/useAllMovies.ts`: sửa cùng một lỗi so sánh.
+- Không đổi: giới hạn 2 hàng mỗi mục, thứ tự "Mới cập nhật"
+  vẫn là mới cập nhật nhất trước, cơ chế làm mới cache v4.2.
+- Kiểm chứng: script Node chứng minh sort cũ cho thứ tự khác
+  nhau khi sort lại, sort mới cho thứ tự giống hệt nhau;
+  `tsc --noEmit` PASS, `npm run build` PASS.

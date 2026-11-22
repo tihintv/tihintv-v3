@@ -6,6 +6,7 @@ import SectionGrid from "@/components/SectionGrid";
 import ContinueWatchingSection from "@/components/ContinueWatchingSection";
 import useDebounce from "@/hooks/useDebounce";
 import { getMoviesFromCache, saveMoviesToCache } from "@/lib/movieCache";
+import { compareUpdatedDesc } from "@/lib/compareUpdatedDesc";
 
 type Movie = {
   id?: string;
@@ -41,6 +42,25 @@ function shuffle<T>(items: T[]): T[] {
   return shuffled;
 }
 
+// Giữ lại `pinCount` phim mới cập nhật nhất ở đầu danh sách (danh
+// sách đầu vào phải xếp theo mới cập nhật trước), rồi xáo trộn phần
+// còn lại và lấy thêm cho đủ `totalCount` phim. Trả về mảng mới.
+function pinnedRandom<T extends { updated_at?: string; slug: string }>(
+  items: T[],
+  pinCount = 3,
+  totalCount = 10
+): T[] {
+  const sorted = [...items].sort((a, b) =>
+    compareUpdatedDesc(a.updated_at, b.updated_at, a.slug, b.slug)
+  );
+  const pinned = sorted.slice(0, pinCount);
+  const rest = shuffle(sorted.slice(pinCount)).slice(
+    0,
+    Math.max(0, totalCount - pinned.length)
+  );
+  return [...pinned, ...rest];
+}
+
 function normalizeVietnamese(text: string) {
   return text
     .normalize("NFD")
@@ -57,11 +77,14 @@ export default function HomeClient({ movies }: Props) {
 
   const [displayMovies, setDisplayMovies] = useState<Movie[]>(movies);
 
-  // Thứ tự ngẫu nhiên cho mục "Phim bộ" / "Phim lẻ": xáo trộn 1 lần
-  // mỗi lần mở trang (trong useEffect, sau khi render lần đầu, nên
-  // không lệch với HTML máy chủ gửi về). Mỗi lần tải lại trang hoặc
-  // truy cập lại sẽ thấy các phim khác. Khi đang tìm kiếm/lọc thì
-  // dùng danh sách thường để kết quả tìm kiếm luôn đúng.
+  // Thứ tự cho mục "Phim bộ" / "Phim lẻ": GHIM 3 phim mới cập nhật
+  // nhất lên đầu rồi mới xáo trộn phần còn lại (lấy thêm 7 phim
+  // ngẫu nhiên cho đủ 10). Như vậy phim vừa thêm/cập nhật luôn
+  // nhìn thấy trong mục của nó, đồng thời mỗi lần tải lại trang
+  // vẫn thấy các phim khác ở phần còn lại. Xáo trộn 1 lần mỗi lần
+  // mở trang (trong useEffect, sau khi render lần đầu, nên không
+  // lệch với HTML máy chủ gửi về). Khi đang tìm kiếm/lọc thì dùng
+  // danh sách thường để kết quả tìm kiếm luôn đúng.
   const shuffledOnceRef = useRef(false);
   const [randomSeries, setRandomSeries] = useState<Movie[] | null>(null);
   const [randomSingle, setRandomSingle] = useState<Movie[] | null>(null);
@@ -71,10 +94,14 @@ export default function HomeClient({ movies }: Props) {
     if (displayMovies.length === 0) return;
     shuffledOnceRef.current = true;
     setRandomSeries(
-      shuffle(displayMovies.filter((m) => m.content_type === "series"))
+      pinnedRandom(
+        displayMovies.filter((m) => m.content_type === "series")
+      )
     );
     setRandomSingle(
-      shuffle(displayMovies.filter((m) => m.content_type === "movie"))
+      pinnedRandom(
+        displayMovies.filter((m) => m.content_type === "movie")
+      )
     );
   }, [displayMovies]);
   const [contentFilter, setContentFilter] = useState<ContentFilter>("all");
@@ -180,7 +207,7 @@ export default function HomeClient({ movies }: Props) {
           return (a.year || 0) - (b.year || 0);
         case "updated":
         default:
-          return (a.updated_at || "") < (b.updated_at || "") ? 1 : -1;
+          return compareUpdatedDesc(a.updated_at, b.updated_at, a.slug, b.slug);
       }
     });
 
@@ -196,7 +223,7 @@ export default function HomeClient({ movies }: Props) {
 
   const latestMovies = useMemo(() => {
     return [...filteredMovies].sort((a, b) =>
-      (a.updated_at || "") < (b.updated_at || "") ? 1 : -1
+      compareUpdatedDesc(a.updated_at, b.updated_at, a.slug, b.slug)
     );
   }, [filteredMovies]);
 
