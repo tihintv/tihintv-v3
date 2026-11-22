@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import { revalidateSiteData } from "./revalidateSiteData";
+import { touchMovieUpdatedAt } from "./touchMovieUpdatedAt";
 
 type AddEpisodeInput = {
   movie_slug: string;
@@ -19,6 +20,8 @@ export async function addEpisodeToSupabase(episode: AddEpisodeInput) {
     throw new Error(error.message);
   }
 
+  // Đẩy phim lên đầu mục "Mới cập nhật" rồi mới làm mới trang chủ.
+  await touchMovieUpdatedAt(episode.movie_slug);
   await revalidateSiteData("all");
 
   return data;

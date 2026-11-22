@@ -335,3 +335,53 @@ thấy các phim khác.
   kiểm tra file CSS sau build thấy đủ 7 luật `nth-child`
   (n+5, n+7, n+9, n+11) để giới hạn đúng 2 hàng ở mọi cỡ màn
   hình.
+
+
+---
+
+# Bản v4.4 — phim/tập mới thêm ở Admin không nhảy lên đầu trang chủ (22/11)
+
+## Triệu chứng
+Thêm phim mới hoặc thêm/sửa tập mới ở Admin, dữ liệu đã vào
+Supabase (trang Admin thấy đủ, trang chi tiết phim cũng thấy
+đủ tập), nhưng trên trang chủ phim đó không hiện lên đầu mục
+"Mới cập nhật" — thường nằm ngoài top 10 nên với giới hạn 2
+hàng (bản v4.3) thì gần như không nhìn thấy. Admin vẫn báo
+"Phim đã được đẩy lên Top!" nhưng thực tế không phải vậy.
+
+## Nguyên nhân (đã kiểm tra kỹ trên web live)
+- Cơ chế làm mới trang chủ (bản v4.2) ĐÃ chạy đúng: kiểm tra
+  thật trên web live, cả GET và POST /api/revalidate đều trả
+  `{"revalidated":true}`, trang chủ về `Age: 39`,
+  `X-Vercel-Cache: REVALIDATED`, và file trên GitHub đã có đủ
+  POST handler + `export const revalidate = 60`. Lỗi không nằm
+  ở cache nữa.
+- Lỗi nằm ở thứ tự xếp hạng: mục "Mới cập nhật" xếp phim theo
+  `updated_at` của bảng movies. Khi thêm/sửa/xóa tập phim,
+  code chỉ thay đổi bảng episodes mà KHÔNG chạm vào bảng
+  movies, nên `updated_at` của phim giữ nguyên giá trị cũ và
+  phim vẫn nằm ở vị trí cũ. Thêm phim mới thì đã có
+  `updated_at = now` nên phim mới vẫn lên đầu bình thường.
+
+## Đã sửa
+- Mới: `src/lib/touchMovieUpdatedAt.ts` — hàm dùng chung, cập
+  nhật `updated_at` của một phim thành thời điểm hiện tại để
+  đẩy phim đó lên đầu mục "Mới cập nhật". Hàm này không bao
+  giờ throw (chỉ ghi log khi lỗi) để tập phim đã lưu không bị
+  báo lỗi giả.
+- `src/lib/addEpisodeToSupabase.ts`: sau khi thêm tập xong thì
+  đẩy phim lên top, rồi mới làm mới trang chủ.
+- `src/lib/updateEpisodeInSupabase.ts`: sau khi sửa tập xong
+  thì đẩy phim lên top (nếu tập được chuyển sang phim khác thì
+  đẩy cả 2 phim), rồi mới làm mới trang chủ.
+- `src/lib/deleteEpisodeFromSupabase.ts`: sau khi xóa tập xong
+  thì đẩy phim lên top (lấy movie_slug từ tập vừa xóa), rồi mới
+  làm mới trang chủ.
+- `src/lib/revalidateSiteData.ts`: nếu gọi POST /api/revalidate
+  lỗi thì tự thử lại bằng GET (route nhận cả 2 cách) để việc
+  làm mới trang chủ chắc chắn chạy sau mỗi lần Admin lưu.
+- Không đổi: thứ tự "Mới cập nhật" vẫn xếp theo updated_at
+  (giờ đã đúng nghĩa "mới cập nhật" nhất, kể cả khi chỉ thêm
+  tập); Admin không cần sửa vì thông báo "Phim đã được đẩy lên
+  Top!" giờ đã đúng sự thật.
+- Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS.

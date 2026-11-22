@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import { revalidateSiteData } from "./revalidateSiteData";
+import { touchMovieUpdatedAt } from "./touchMovieUpdatedAt";
 
 export async function deleteEpisodeFromSupabase(
   episodeId: string | number
@@ -19,6 +20,8 @@ export async function deleteEpisodeFromSupabase(
     throw new Error("Không tìm thấy tập phim để xóa");
   }
 
+  // Đẩy phim lên đầu mục "Mới cập nhật" rồi mới làm mới trang chủ.
+  await touchMovieUpdatedAt(data[0].movie_slug);
   await revalidateSiteData("all");
 
   return true;

@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import { revalidateSiteData } from "./revalidateSiteData";
+import { touchMovieUpdatedAt } from "./touchMovieUpdatedAt";
 
 type UpdateEpisodePayload = {
   original_movie_slug: string;
@@ -35,6 +36,12 @@ export async function updateEpisodeInSupabase(
     throw new Error("Không tìm thấy tập phim để cập nhật");
   }
 
+  // Đẩy phim lên đầu mục "Mới cập nhật" rồi mới làm mới trang chủ.
+  // Nếu tập được chuyển sang phim khác thì đẩy cả 2 phim lên.
+  await touchMovieUpdatedAt(payload.movie_slug);
+  if (payload.original_movie_slug !== payload.movie_slug) {
+    await touchMovieUpdatedAt(payload.original_movie_slug);
+  }
   await revalidateSiteData("all");
 
   return data;
