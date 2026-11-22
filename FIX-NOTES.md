@@ -255,3 +255,45 @@ rà. Người dùng yêu cầu bỏ hẳn mục này.
   lẻ vẫn tự chuyển tới tập mới nhất như trước (logic đó nằm ở
   trang watch, không liên quan mục này).
 - Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS (8 route).
+
+
+---
+
+# Bản v4.2 — tập/phim mới thêm ở Admin không hiện lên web (22/11)
+
+## Triệu chứng
+Thêm tập mới (hoặc phim mới) ở trang Admin, dữ liệu đã vào
+Supabase (trang chi tiết phim vẫn hiện đủ tập vì trang đó là
+trang động), nhưng trang chủ không đổi: thẻ phim không hiện số
+tập mới, phim mới không lên đầu mục "Mới cập nhật". Tất cả phim
+đều bị như vậy.
+
+## Nguyên nhân (2 lỗi chồng nhau)
+1. Sau mỗi lần Admin lưu, code gọi `revalidateSiteData("all")`
+   để làm mới web (xem `src/lib/revalidateSiteData.ts`), hàm này
+   gọi API `/api/revalidate` bằng **POST**. Nhưng route
+   `src/app/api/revalidate/route.ts` trước đây **chỉ có GET**
+   nên POST luôn trả về 405 — việc làm mới không bao giờ chạy.
+2. Dù có gọi được thì route cũng chỉ `revalidateTag("movies")`
+   và `revalidateTag("episodes")` mà không có chỗ nào dùng 2 tag
+   đó, nên trang chủ (trang tĩnh) vẫn giữ bản cũ. Kiểm tra thật
+   trên web live: trang chủ được Vercel cache
+   (`X-Vercel-Cache: HIT`, `Age: 46932` giây ≈ 13 tiếng) nên tập
+   mới thêm vào không bao giờ hiện cho tới khi deploy lại.
+   Từ bản v4.1, trang chủ cũng mất luôn chu kỳ tự làm mới 60
+   giây (trước đây có nhờ `getLatestEpisodes`), nên càng không
+   tự cập nhật.
+
+## Đã sửa
+- `src/app/api/revalidate/route.ts`: thêm handler **POST**
+  (GET giữ nguyên), cả hai đều gọi `revalidatePath("/")` và
+  `revalidatePath("/movies")` để trang chủ + trang danh sách
+  phim được tạo lại từ dữ liệu mới ngay lần truy cập tiếp theo
+  sau mỗi lần Admin lưu. Vẫn giữ `revalidateTag` như trước.
+- `src/app/page.tsx`: thêm `export const revalidate = 60`
+  (lưới an toàn): dù API làm mới có lỗi thì trang chủ vẫn tự
+  cập nhật tối đa mỗi 60 giây.
+- Trang chi tiết phim và trang xem là trang động nên luôn lấy
+  dữ liệu mới, không cần sửa.
+- Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS
+  (trang chủ hiện `Revalidate 1m` trở lại trong bảng route).
