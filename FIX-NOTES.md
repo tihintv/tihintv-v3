@@ -297,3 +297,41 @@ tập mới, phim mới không lên đầu mục "Mới cập nhật". Tất c�
   dữ liệu mới, không cần sửa.
 - Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS
   (trang chủ hiện `Revalidate 1m` trở lại trong bảng route).
+
+
+---
+
+# Bản v4.3 — mỗi mục trang chủ chỉ hiện 2 hàng, Phim bộ / Phim lẻ xáo trộn (22/11)
+
+## Yêu cầu
+Trang chủ quá dài (mỗi mục hiện toàn bộ ~115 phim, cả 4 mục
+lặp lại nhau, tổng ~345 thẻ), cuộn trên điện thoại tìm phim rất
+lâu. Cần: mỗi mục chỉ hiện 2 hàng; riêng "Phim bộ" và "Phim lẻ"
+hiển thị ngẫu nhiên, mỗi lần tải lại trang hoặc truy cập lại thì
+thấy các phim khác.
+
+## Đã đổi
+- `src/components/SectionGrid.tsx`: thêm prop `compact`.
+  Khi compact, mỗi mục chỉ lấy tối đa 10 phim và dùng CSS
+  `nth-child` để ẩn bớt thẻ vượt quá 2 hàng theo từng cỡ màn
+  hình (điện thoại 2 cột = 4 phim, sm 3 cột = 6 phim, lg 4 cột
+  = 8 phim, xl 5 cột = 10 phim). Thẻ bị ẩn không tải ảnh nên
+  trang nhẹ hơn. Thêm nút "Xem tất cả →" dẫn tới trang
+  /movies khi mục có nhiều phim hơn số đang hiện.
+- `src/components/HomeClient.tsx`:
+  - Truyền `compact={!isSearching}` cho cả 4 mục ("Mới cập
+    nhật", "Phim bộ", "Phim lẻ", "Tất cả phim"). Khi đang tìm
+    kiếm/lọc thì hiện đủ kết quả để tìm được phim cần tìm.
+  - "Mới cập nhật" vẫn xếp theo mới cập nhật trước, chỉ lấy
+    2 hàng đầu.
+  - "Phim bộ" / "Phim lẻ": xáo trộn thứ tự 1 lần mỗi lần mở
+    trang (trong `useEffect` sau khi render lần đầu nên không
+    lệch với HTML máy chủ). Mỗi lần tải lại trang hoặc truy
+    cập lại sẽ thấy các phim khác. Khi đang tìm kiếm thì dùng
+    danh sách đã lọc như thường để kết quả luôn đúng.
+- Không đổi: banner, ô tìm kiếm, trang /movies, trang chi
+  tiết, trang xem.
+- Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS;
+  kiểm tra file CSS sau build thấy đủ 7 luật `nth-child`
+  (n+5, n+7, n+9, n+11) để giới hạn đúng 2 hàng ở mọi cỡ màn
+  hình.

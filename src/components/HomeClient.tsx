@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import HeroBanner from "@/components/HeroBanner";
 import SectionGrid from "@/components/SectionGrid";
 import ContinueWatchingSection from "@/components/ContinueWatchingSection";
@@ -31,6 +31,16 @@ type Props = {
 type ContentFilter = "all" | "movie" | "series";
 type SortFilter = "updated" | "az" | "year_desc" | "year_asc";
 
+// Xáo trộn mảng (Fisher-Yates), trả về mảng mới, không đổi mảng gốc.
+function shuffle<T>(items: T[]): T[] {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 function normalizeVietnamese(text: string) {
   return text
     .normalize("NFD")
@@ -46,6 +56,27 @@ export default function HomeClient({ movies }: Props) {
   const debouncedQuery = useDebounce(query, 300);
 
   const [displayMovies, setDisplayMovies] = useState<Movie[]>(movies);
+
+  // Thứ tự ngẫu nhiên cho mục "Phim bộ" / "Phim lẻ": xáo trộn 1 lần
+  // mỗi lần mở trang (trong useEffect, sau khi render lần đầu, nên
+  // không lệch với HTML máy chủ gửi về). Mỗi lần tải lại trang hoặc
+  // truy cập lại sẽ thấy các phim khác. Khi đang tìm kiếm/lọc thì
+  // dùng danh sách thường để kết quả tìm kiếm luôn đúng.
+  const shuffledOnceRef = useRef(false);
+  const [randomSeries, setRandomSeries] = useState<Movie[] | null>(null);
+  const [randomSingle, setRandomSingle] = useState<Movie[] | null>(null);
+
+  useEffect(() => {
+    if (shuffledOnceRef.current) return;
+    if (displayMovies.length === 0) return;
+    shuffledOnceRef.current = true;
+    setRandomSeries(
+      shuffle(displayMovies.filter((m) => m.content_type === "series"))
+    );
+    setRandomSingle(
+      shuffle(displayMovies.filter((m) => m.content_type === "movie"))
+    );
+  }, [displayMovies]);
   const [contentFilter, setContentFilter] = useState<ContentFilter>("all");
   const [genreFilter, setGenreFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
@@ -182,6 +213,14 @@ export default function HomeClient({ movies }: Props) {
     contentFilter !== "all" ||
     genreFilter !== "all" ||
     yearFilter !== "all";
+
+  // Khi không tìm kiếm/lọc: mục "Phim bộ" / "Phim lẻ" hiển thị theo
+  // thứ tự ngẫu nhiên đã xáo trộn lúc mở trang; khi đang tìm kiếm
+  // thì hiển thị theo danh sách đã lọc như thường.
+  const shownSeriesMovies =
+    !isSearching && randomSeries ? randomSeries : seriesMovies;
+  const shownSingleMovies =
+    !isSearching && randomSingle ? randomSingle : singleMovies;
 
   const hasMovies = displayMovies.length > 0;
   const hasFilteredMovies = filteredMovies.length > 0;
@@ -347,21 +386,24 @@ export default function HomeClient({ movies }: Props) {
               id="moi-cap-nhat"
               title="Mới cập nhật"
               movies={latestMovies as any}
+              compact={!isSearching}
             />
 
-            {seriesMovies.length > 0 ? (
+            {shownSeriesMovies.length > 0 ? (
               <SectionGrid
                 id="phim-bo"
                 title="Phim bộ"
-                movies={seriesMovies as any}
+                movies={shownSeriesMovies as any}
+                compact={!isSearching}
               />
             ) : null}
 
-            {singleMovies.length > 0 ? (
+            {shownSingleMovies.length > 0 ? (
               <SectionGrid
                 id="phim-le"
                 title="Phim lẻ"
-                movies={singleMovies as any}
+                movies={shownSingleMovies as any}
+                compact={!isSearching}
               />
             ) : null}
 
@@ -369,6 +411,7 @@ export default function HomeClient({ movies }: Props) {
               id="tat-ca-phim"
               title="Tất cả phim"
               movies={filteredMovies as any}
+              compact={!isSearching}
             />
           </>
         )}
