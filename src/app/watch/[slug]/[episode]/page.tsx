@@ -106,18 +106,23 @@ export default async function WatchEpisodePage({
           </div>
         </div>
 
-        {/* --- CHIẾC LỒNG TỶ LỆ 16:9 DÀNH RIÊNG CHO ĐIỆN THOẠI --- */}
-        <div className="relative w-full aspect-video overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
-          <div className="absolute top-0 left-0 w-full h-full">
-            <VideoPlayer
-              slug={slug}
-              episode={currentEpisode.episode_number}
-              videoUrl={currentEpisode.video_url}
-              nextEpisodeNumber={nextEpisode?.episode_number}
-            />
-          </div>
+        {/* Khung phát: để VideoPlayer tự quyết chiều cao. Trên điện
+            thoại VideoPlayer cao hơn video 200px để vừa hàng nút
+            điều khiển của Drive; trên máy tính giữ 16:9. KHÔNG bọc
+            bằng khung aspect-video có overflow-hidden, vì khung đó
+            ép VideoPlayer về đúng 16:9 và cắt mất phần cao thêm —
+            video của Drive bị dồn xuống nửa dưới, chừa một khoảng
+            đen ở trên và nút bấm bị cắt mất (lỗi thấy trên điện
+            thoại 26/11). Khung ngoài này chỉ giữ viền và bo góc,
+            không ép chiều cao. */}
+        <div className="w-full overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+          <VideoPlayer
+            slug={slug}
+            episode={currentEpisode.episode_number}
+            videoUrl={currentEpisode.video_url}
+            nextEpisodeNumber={nextEpisode?.episode_number}
+          />
         </div>
-        {/* ------------------------------------------------------ */}
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-4 md:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">

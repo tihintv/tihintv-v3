@@ -15,7 +15,10 @@ export default function LoadingWatchEpisodePage() {
         </div>
 
         <div className="animate-pulse overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
-          <div className="aspect-video w-full bg-white/10" />
+          {/* Giữ đúng chiều cao của khung phát thật để lúc tải xong
+              trang không bị nhảy hình: điện thoại cao hơn video
+              200px, máy tính 16:9 (xem VideoPlayer). */}
+          <div className="w-full bg-white/10 max-sm:h-[calc(100vw*9/16+200px)] max-sm:max-h-[460px] sm:aspect-video" />
         </div>
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-4 md:p-5">

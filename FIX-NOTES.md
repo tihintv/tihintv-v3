@@ -436,3 +436,43 @@ thứ 2 ở "Phim bộ" nhưng hoàn toàn vắng mặt ở "Mới cập nhật"
 - Kiểm chứng: script Node chứng minh sort cũ cho thứ tự khác
   nhau khi sort lại, sort mới cho thứ tự giống hệt nhau;
   `tsc --noEmit` PASS, `npm run build` PASS.
+
+
+---
+
+# Bản v4.6 — trang xem trên điện thoại: video bị dồn xuống nửa dưới, đen ở trên (26/11)
+
+## Triệu chứng
+Mở trang xem (/watch/...) trên điện thoại: lúc chưa bấm phát thì
+ảnh bìa hiện đầy khung, nhìn bình thường; bấm phát thì video bị
+dồn xuống nửa dưới của khung, phía trên là một khoảng đen lớn,
+thanh tua và nút bấm bị che/cắt mất một phần. Thấy trên cả 2 phim
+(Reincarnated Aristocrat tập 11, Battle Spirits tập 4).
+
+## Nguyên nhân
+Trang xem bọc VideoPlayer trong một khung `aspect-video` có
+`overflow-hidden` (cùng một lớp `absolute ... h-full` bên trong).
+VideoPlayer trên điện thoại vốn cao hơn video 200px (bản sửa v2)
+để vừa hàng nút điều khiển của Drive, nhưng khung ngoài ép nó về
+đúng 16:9 rồi cắt mất phần cao thêm — chỉ còn thấy lát cắt trên
+cùng của khung phát Drive, tức là khoảng đen ở trên và một phần
+video ở dưới. Khung này là phần còn sót lại từ thời làm trình
+phát tự chế (v3), lúc revert về v2 chỉ khôi phục VideoPlayer mà
+không gỡ khung bọc ở trang xem. Trang chi tiết phim không có
+trình phát nên không bị lỗi này.
+
+## Đã sửa
+- `src/app/watch/[slug]/[episode]/page.tsx`: bỏ khung
+  `aspect-video` + lớp `absolute h-full` bên trong, chỉ giữ khung
+  ngoài làm viền/bo góc, để VideoPlayer tự quyết chiều cao (điện
+  thoại cao hơn video 200px, máy tính 16:9 như bản v2).
+- `src/app/watch/[slug]/[episode]/loading.tsx`: khung chờ lúc
+  tải trang cũng đổi sang cùng chiều cao với khung phát thật để
+  lúc tải xong trang không bị nhảy hình.
+- Không đổi: VideoPlayer, link Drive /preview, nút chuyển tập,
+  danh sách tập.
+- Kiểm chứng: `tsc --noEmit` PASS, `npm run build` PASS.
+  Cần kiểm tra lại trên điện thoại thật sau khi deploy (bấm phát
+  và xem video có nằm gọn trong khung, nút điều khiển có hiện đủ
+  không), vì máy ảo ở đây không mô phỏng được trình phát Drive
+  trên điện thoại.
